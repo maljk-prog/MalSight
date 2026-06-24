@@ -9,12 +9,14 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@tailwindcss/postcss": "^4.3.1",
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "next": "latest",
     "react": "latest",
     "react-dom": "latest",
+    "rss-parser": "^3.13.0",
     "typescript": "latest"
   },
   "devDependencies": {
