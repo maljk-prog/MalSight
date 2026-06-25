@@ -162,58 +162,17 @@ export default function ImpactChain() {
                   </div>
 
                   <div className="rounded-xl border border-[#8DA99B]/50 bg-white/60 p-4">
-                    <div className="mb-4 rounded-xl bg-[#F5F4EF] p-4">
-                      <p className="text-sm font-bold text-[#243B32]">
-                        Risk lens
-                      </p>
-                      <div className="mt-3 grid gap-3 md:grid-cols-2">
-                        <div>
-                          <p className="text-xs font-bold uppercase tracking-widest text-[#3F6B5A]">
-                            Threat event
-                          </p>
-                          <p className="mt-1 text-sm text-[#466357]">
-                            {item.threatEvent}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold uppercase tracking-widest text-[#3F6B5A]">
-                            Exposure
-                          </p>
-                          <p className="mt-1 text-sm text-[#466357]">
-                            {item.exposure}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold uppercase tracking-widest text-[#3F6B5A]">
-                            CIA impact
-                          </p>
-                          <p className="mt-1 text-sm text-[#466357]">
-                            {item.ciaImpact}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold uppercase tracking-widest text-[#3F6B5A]">
-                            Likelihood
-                          </p>
-                          <p className="mt-1 text-sm text-[#466357]">
-                            {item.likelihood}
-                          </p>
-                        </div>
-                      </div>
-                      <p className="mt-3 text-xs font-bold uppercase tracking-widest text-[#3F6B5A]">
-                        Risk response
-                      </p>
-                      <p className="mt-1 text-sm text-[#466357]">
-                        {item.riskResponse}
-                      </p>
-                    </div>
-
                     <div className="mb-4 rounded-xl border border-[#D6C89B]/70 bg-[#F5F4EF] p-4">
                       <p className="text-xs font-bold uppercase tracking-widest text-[#3F6B5A]">
-                        Simplified analogy
+                        Think of it like this
                       </p>
                       <p className="mt-2 text-sm font-semibold text-[#466357]">
                         {item.simpleAnalogy}
+                      </p>
+                      <p className="mt-3 text-sm text-[#466357]">
+                        The practical concern is whether people can still get
+                        what they need when the affected system becomes slower,
+                        less trusted, or unavailable.
                       </p>
                     </div>
 
