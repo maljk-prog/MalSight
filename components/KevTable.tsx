@@ -128,15 +128,14 @@ export default function KevTable({
       <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-sm font-bold tracking-[0.3em] text-[#3F6B5A]">
-            CISA KEV
+            EXPLOITED CVEs
           </p>
           <h2 className="mt-2 text-3xl font-black">
-            Known exploited vulnerabilities by vendor
+            Known exploited CVEs by vendor
           </h2>
           <p className="mt-2 text-[#466357]">
-            Full CISA Known Exploited Vulnerabilities catalog grouped by vendor
-            and product. Start with the Top 15 Impacted vendors, jump by
-            letter, or search by keyword.
+            CISA KEV is a curated list of CVEs known to be exploited in the
+            wild. Browse them by vendor, jump by letter, or search by keyword.
           </p>
         </div>
 
@@ -175,7 +174,7 @@ export default function KevTable({
 
           <label className="block">
             <span className="mb-2 block text-sm font-bold text-[#466357]">
-              Search KEV
+              Search exploited CVEs
             </span>
             <input
               type="search"
@@ -237,7 +236,7 @@ export default function KevTable({
       <div className="space-y-4 rounded-2xl border border-[#8DA99B]/50 bg-white/50 p-4">
         {visibleVendorGroups.length === 0 && (
           <div className="rounded-2xl bg-[#E6E4DE] p-5 text-[#466357]">
-            No KEV entries match that keyword.
+            No exploited CVEs match that keyword.
           </div>
         )}
 

@@ -18,7 +18,7 @@ export default function DashboardTabs({ kevData }: { kevData: any }) {
             tab === "kev" ? "bg-[#3F6B5A] text-white" : "bg-white/60"
           }`}
         >
-          CISA KEV
+          Exploited CVEs
         </button>
 
         <button
