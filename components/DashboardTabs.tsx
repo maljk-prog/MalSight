@@ -3,6 +3,7 @@
 import { useState } from "react";
 import KevTable from "./KevTable";
 import NewsFeed from "./NewsFeed";
+import ThreatMap from "./ThreatMap";
 
 export default function DashboardTabs({ kevData }: { kevData: any }) {
   const [tab, setTab] = useState("kev");
@@ -27,10 +28,20 @@ export default function DashboardTabs({ kevData }: { kevData: any }) {
         >
           Breach News
         </button>
+
+        <button
+          onClick={() => setTab("threat-map")}
+          className={`rounded-full px-5 py-2 font-semibold ${
+            tab === "threat-map" ? "bg-[#3F6B5A] text-white" : "bg-white/60"
+          }`}
+        >
+          Threat Map
+        </button>
       </div>
 
       {tab === "kev" && <KevTable vulnerabilities={kevData.vulnerabilities} />}
       {tab === "news" && <NewsFeed />}
+      {tab === "threat-map" && <ThreatMap />}
     </section>
   );
 }
