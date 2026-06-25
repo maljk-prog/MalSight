@@ -90,12 +90,6 @@ function featureToPath(feature: GeoJsonFeature) {
     .join(" ");
 }
 
-function heatColor(intensity: number) {
-  if (intensity > 0.72) return "#FF3B30";
-  if (intensity > 0.42) return "#FF8A00";
-  return "#FFD166";
-}
-
 function formatNumber(value: number) {
   return new Intl.NumberFormat("en").format(value);
 }
@@ -103,6 +97,8 @@ function formatNumber(value: number) {
 export default function ThreatMap() {
   const [data, setData] = useState<ThreatMapResponse | null>(null);
   const [mapFeatures, setMapFeatures] = useState<GeoJsonFeature[]>([]);
+  const [zoom, setZoom] = useState(1);
+  const [center, setCenter] = useState({ x: 500, y: 260 });
   const [status, setStatus] = useState<"loading" | "ready" | "error">(
     "loading",
   );
@@ -133,6 +129,13 @@ export default function ThreatMap() {
   const countries = data?.countries || [];
   const sources = data?.sources || [];
   const maxAttacks = Math.max(...countries.map((country) => country.attacks), 1);
+  const maxSourceAttacks = Math.max(
+    ...sources.map((source) => source.attacks),
+    1,
+  );
+  const viewWidth = 1000 / zoom;
+  const viewHeight = 520 / zoom;
+  const viewBox = `${Math.max(0, Math.min(1000 - viewWidth, center.x - viewWidth / 2))} ${Math.max(0, Math.min(520 - viewHeight, center.y - viewHeight / 2))} ${viewWidth} ${viewHeight}`;
   const totals = useMemo(
     () => ({
       attacks: countries.reduce((sum, country) => sum + country.attacks, 0),
@@ -203,8 +206,34 @@ export default function ThreatMap() {
         {status === "ready" && (
           <>
             <div className="relative overflow-hidden rounded-2xl bg-[#13231D]">
+              <div className="absolute right-4 top-4 z-10 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setZoom((current) => Math.min(4, current + 0.75))}
+                  className="rounded-xl border border-[#C8DDD2]/40 bg-[#13231D]/80 px-3 py-2 text-sm font-black text-[#F5F4EF] backdrop-blur"
+                >
+                  +
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setZoom((current) => Math.max(1, current - 0.75))}
+                  className="rounded-xl border border-[#C8DDD2]/40 bg-[#13231D]/80 px-3 py-2 text-sm font-black text-[#F5F4EF] backdrop-blur"
+                >
+                  -
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setZoom(1);
+                    setCenter({ x: 500, y: 260 });
+                  }}
+                  className="rounded-xl border border-[#C8DDD2]/40 bg-[#13231D]/80 px-3 py-2 text-sm font-bold text-[#F5F4EF] backdrop-blur"
+                >
+                  Reset
+                </button>
+              </div>
               <svg
-                viewBox="0 0 1000 520"
+                viewBox={viewBox}
                 role="img"
                 aria-label="World heatmap of public attack source telemetry"
                 className="h-[520px] w-full"
@@ -272,45 +301,68 @@ export default function ThreatMap() {
                         r={radius}
                         fill="url(#heat-core)"
                         opacity={0.38 + intensity * 0.48}
+                        className="cursor-zoom-in"
+                        onClick={() => {
+                          setCenter(point);
+                          setZoom((current) => Math.max(current, 2.75));
+                        }}
                       />
                     );
                   })}
                 </g>
 
-                <g>
-                  {countries.map((country) => {
-                    const point = project(country.longitude, country.latitude);
-                    const intensity = Math.sqrt(country.attacks / maxAttacks);
-                    const radius = 5 + intensity * 18;
+                <g opacity={zoom > 1 ? 0.86 : 0.34}>
+                  {sources.map((source) => {
+                    const point = project(source.longitude, source.latitude);
+                    const intensity = Math.sqrt(source.attacks / maxSourceAttacks);
+                    const radius = zoom > 1 ? 2.4 + intensity * 5.5 : 1.2 + intensity * 2.4;
 
                     return (
-                      <g key={country.countryCode}>
-                        <circle
-                          cx={point.x}
-                          cy={point.y}
-                          r={radius}
-                          fill={heatColor(intensity)}
-                          fillOpacity="0.82"
-                          stroke="#FFF3B0"
-                          strokeOpacity="0.7"
-                          strokeWidth="1.5"
-                        />
-                        <circle
-                          cx={point.x}
-                          cy={point.y}
-                          r="2.5"
-                          fill="#FFFFFF"
-                          fillOpacity="0.95"
-                        />
+                      <circle
+                        key={source.ip}
+                        cx={point.x}
+                        cy={point.y}
+                        r={radius}
+                        fill="#FFF3B0"
+                        opacity={0.26 + intensity * 0.46}
+                        stroke="#FF8A00"
+                        strokeOpacity={zoom > 1 ? 0.42 : 0}
+                        strokeWidth={0.6 / zoom}
+                      >
                         <title>
-                          {country.country}: {formatNumber(country.attacks)}{" "}
-                          attacks from {country.ipCount} IPs over{" "}
-                          {country.daysSeen} observed IP-days
+                          {source.ip} · {source.city}, {source.country}:{" "}
+                          {formatNumber(source.attacks)} attacks
                         </title>
-                      </g>
+                      </circle>
                     );
                   })}
                 </g>
+
+                {zoom > 1.75 && (
+                  <g>
+                    {sources.map((source) => {
+                      const point = project(source.longitude, source.latitude);
+
+                      return (
+                        <text
+                          key={`count-${source.ip}`}
+                          x={point.x}
+                          y={point.y - 7}
+                          textAnchor="middle"
+                          className="select-none"
+                          fill="#F5F4EF"
+                          stroke="#13231D"
+                          strokeWidth={2 / zoom}
+                          paintOrder="stroke"
+                          fontSize={11 / zoom}
+                          fontWeight="800"
+                        >
+                          {formatNumber(source.attacks)}
+                        </text>
+                      );
+                    })}
+                  </g>
+                )}
               </svg>
 
               {mapFeatures.length === 0 && (
@@ -319,6 +371,11 @@ export default function ThreatMap() {
                 </div>
               )}
             </div>
+
+            <p className="mt-3 text-sm font-semibold text-[#466357]">
+              Use the zoom controls or click a heat region to inspect the
+              smaller translucent source-IP points underneath.
+            </p>
 
             <div className="mt-4 flex flex-col gap-2 text-sm font-semibold text-[#466357] md:flex-row md:items-center md:justify-between">
               <p>{data?.source}</p>
