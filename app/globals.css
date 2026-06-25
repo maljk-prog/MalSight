@@ -743,3 +743,550 @@ body {
   66% { left: 66%; top: 84%; }
   100% { left: 13%; top: 84%; }
 }
+
+/* Use the supplied SOC room art directly for the hero. */
+.soc-rpg-backdrop {
+  inset: 0;
+  opacity: 1;
+  background: #13231d;
+  filter: saturate(0.74) contrast(0.9) brightness(0.82);
+  image-rendering: pixelated;
+  mask-image: none;
+}
+
+.soc-rpg-backdrop::after {
+  background:
+    linear-gradient(90deg, rgba(19, 35, 29, 0.74), rgba(36, 59, 50, 0.46) 34%, rgba(19, 35, 29, 0.18) 68%),
+    linear-gradient(135deg, rgba(200, 221, 210, 0.32), rgba(63, 107, 90, 0.28) 46%, rgba(214, 200, 155, 0.18)),
+    radial-gradient(circle at 52% 50%, rgba(200, 221, 210, 0.04) 0 42%, rgba(0, 0, 0, 0.42) 100%);
+  mix-blend-mode: soft-light;
+}
+
+.soc-rpg-backdrop::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: rgba(200, 221, 210, 0.2);
+  pointer-events: none;
+}
+
+.soc-rpg-room-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  opacity: 0.68;
+  user-select: none;
+}
+
+.soc-rpg-character {
+  z-index: 4;
+  width: 26px;
+  height: 34px;
+  border: 0;
+  background: transparent;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.42));
+  image-rendering: pixelated;
+}
+
+.sprite-shadow,
+.sprite-head,
+.sprite-body,
+.sprite-legs,
+.sprite-arm,
+.sprite-hair,
+.sprite-face {
+  position: absolute;
+  display: block;
+}
+
+.sprite-shadow {
+  left: 3px;
+  bottom: 0;
+  width: 20px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.34);
+}
+
+.sprite-head {
+  left: 6px;
+  top: 0;
+  width: 14px;
+  height: 13px;
+  border: 2px solid #101820;
+  border-radius: 4px 4px 5px 5px;
+  background: var(--skin, #d99063);
+  box-shadow:
+    inset 2px 0 rgba(255, 255, 255, 0.18),
+    inset -2px 0 rgba(0, 0, 0, 0.18);
+}
+
+.sprite-hair {
+  left: -2px;
+  top: -3px;
+  width: 14px;
+  height: 7px;
+  border: 2px solid #101820;
+  border-bottom: 0;
+  border-radius: 5px 5px 1px 1px;
+  background: var(--hair, #2b1a14);
+}
+
+.sprite-face {
+  left: 4px;
+  top: 6px;
+  width: 2px;
+  height: 2px;
+  background: #101820;
+  box-shadow: 5px 0 0 #101820;
+}
+
+.sprite-body {
+  left: 5px;
+  top: 13px;
+  width: 16px;
+  height: 14px;
+  border: 2px solid #101820;
+  border-radius: 2px 2px 4px 4px;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.18), transparent 36%),
+    var(--shirt, #2b79c2);
+}
+
+.sprite-body::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 3px;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.sprite-arm {
+  top: 2px;
+  width: 5px;
+  height: 13px;
+  border: 2px solid #101820;
+  background: var(--sleeve, var(--shirt, #2b79c2));
+}
+
+.sprite-arm.left {
+  left: -7px;
+  transform-origin: 50% 2px;
+  animation: sprite-arm-left 0.55s steps(2, end) infinite;
+}
+
+.sprite-arm.right {
+  right: -7px;
+  transform-origin: 50% 2px;
+  animation: sprite-arm-right 0.55s steps(2, end) infinite;
+}
+
+.sprite-legs {
+  left: 7px;
+  top: 26px;
+  display: flex;
+  gap: 3px;
+}
+
+.sprite-legs span {
+  position: relative;
+  width: 6px;
+  height: 8px;
+  border: 2px solid #101820;
+  background: var(--pants, #1d2b39);
+  animation: sprite-step 0.55s steps(2, end) infinite;
+}
+
+.sprite-legs span:nth-child(2) {
+  animation-delay: 0.28s;
+}
+
+.soc-rpg-character.analyst-a {
+  --shirt: #2f7ed8;
+  --sleeve: #1f5d9e;
+  --pants: #1b2430;
+  --hair: #2d1b12;
+  --skin: #d8915f;
+  animation: analyst-a-room-route 18s linear infinite;
+}
+
+.soc-rpg-character.analyst-b {
+  --shirt: #2fac72;
+  --sleeve: #1f7b56;
+  --pants: #243146;
+  --hair: #151010;
+  --skin: #b96f4b;
+  animation: analyst-b-room-route 22s linear infinite;
+}
+
+.soc-rpg-character.manager-walk {
+  --shirt: #d9bf58;
+  --sleeve: #b89737;
+  --pants: #263245;
+  --hair: #4b2b1d;
+  --skin: #e2a16d;
+  animation: manager-room-route 24s linear infinite;
+}
+
+.soc-rpg-character.cooler-chat {
+  --shirt: #9b7bd9;
+  --sleeve: #7152a9;
+  --pants: #1b2535;
+  --hair: #342017;
+  --skin: #c57d55;
+  animation: cooler-room-route 15s linear infinite;
+}
+
+.soc-rpg-character.janitor {
+  --shirt: #9aa7b2;
+  --sleeve: #748391;
+  --pants: #24303a;
+  --hair: #222;
+  --skin: #d39a70;
+  animation: janitor-room-route 26s linear infinite;
+}
+
+@keyframes sprite-arm-left {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(2px); }
+}
+
+@keyframes sprite-arm-right {
+  0%, 100% { transform: translateY(2px); }
+  50% { transform: translateY(0); }
+}
+
+@keyframes sprite-step {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(2px); }
+}
+
+@keyframes analyst-a-room-route {
+  0% { left: 35%; top: 57%; }
+  24% { left: 55%; top: 57%; }
+  42% { left: 55%; top: 36%; }
+  62% { left: 45%; top: 36%; }
+  78% { left: 45%; top: 57%; }
+  100% { left: 35%; top: 57%; }
+}
+
+@keyframes analyst-b-room-route {
+  0% { left: 27%; top: 84%; }
+  26% { left: 46%; top: 84%; }
+  52% { left: 67%; top: 84%; }
+  74% { left: 67%; top: 77%; }
+  100% { left: 27%; top: 84%; }
+}
+
+@keyframes manager-room-route {
+  0% { left: 20%; top: 31%; }
+  34% { left: 30%; top: 31%; }
+  58% { left: 30%; top: 36%; }
+  78% { left: 38%; top: 36%; }
+  100% { left: 20%; top: 31%; }
+}
+
+@keyframes cooler-room-route {
+  0% { left: 81%; top: 45%; }
+  24% { left: 88%; top: 45%; }
+  50% { left: 88%; top: 62%; }
+  76% { left: 80%; top: 62%; }
+  100% { left: 81%; top: 45%; }
+}
+
+@keyframes janitor-room-route {
+  0% { left: 15%; top: 78%; }
+  30% { left: 24%; top: 84%; }
+  58% { left: 52%; top: 84%; }
+  80% { left: 69%; top: 84%; }
+  100% { left: 15%; top: 78%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .soc-rpg-character,
+  .sprite-arm,
+  .sprite-legs span {
+    animation: none;
+  }
+
+  .soc-rpg-character.analyst-a { left: 35%; top: 57%; }
+  .soc-rpg-character.analyst-b { left: 27%; top: 84%; }
+  .soc-rpg-character.manager-walk { left: 20%; top: 31%; }
+  .soc-rpg-character.cooler-chat { left: 81%; top: 45%; }
+  .soc-rpg-character.janitor { left: 15%; top: 78%; }
+}
+
+/* Final sprite pass: override the earlier CSS-block character sketch. */
+.soc-rpg-character.analyst-a,
+.soc-rpg-character.analyst-b,
+.soc-rpg-character.manager-walk,
+.soc-rpg-character.cooler-chat,
+.soc-rpg-character.janitor {
+  width: 30px;
+  height: 38px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: translate(-50%, -50%);
+}
+
+.soc-rpg-character .sprite-shadow,
+.soc-rpg-character .sprite-head,
+.soc-rpg-character .sprite-body,
+.soc-rpg-character .sprite-legs,
+.soc-rpg-character .sprite-arm,
+.soc-rpg-character .sprite-hair,
+.soc-rpg-character .sprite-face,
+.soc-rpg-character .sprite-legs span {
+  position: absolute;
+  border-radius: 0;
+  box-sizing: border-box;
+}
+
+.soc-rpg-character .sprite-shadow {
+  left: 4px;
+  top: 31px;
+  width: 22px;
+  height: 6px;
+  border: 0;
+  background: rgba(0, 0, 0, 0.38);
+  border-radius: 50%;
+}
+
+.soc-rpg-character .sprite-head {
+  left: 8px;
+  top: 1px;
+  width: 14px;
+  height: 13px;
+  border: 2px solid #101820;
+  background: var(--skin, #d99063);
+  box-shadow:
+    0 -2px 0 var(--hair, #2b1a14),
+    inset 2px 0 rgba(255, 255, 255, 0.18),
+    inset -2px 0 rgba(0, 0, 0, 0.18);
+}
+
+.soc-rpg-character .sprite-hair {
+  left: -2px;
+  top: -4px;
+  width: 14px;
+  height: 8px;
+  border: 2px solid #101820;
+  border-bottom: 0;
+  background: var(--hair, #2b1a14);
+}
+
+.soc-rpg-character .sprite-face {
+  left: 3px;
+  top: 6px;
+  width: 2px;
+  height: 2px;
+  border: 0;
+  background: #101820;
+  box-shadow: 6px 0 0 #101820;
+}
+
+.soc-rpg-character .sprite-body {
+  left: 7px;
+  top: 14px;
+  width: 16px;
+  height: 14px;
+  border: 2px solid #101820;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.18), transparent 38%),
+    var(--shirt, #2b79c2);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.18);
+}
+
+.soc-rpg-character .sprite-body::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 1px;
+  width: 2px;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.soc-rpg-character .sprite-arm {
+  top: 1px;
+  width: 6px;
+  height: 13px;
+  border: 2px solid #101820;
+  background: var(--sleeve, var(--shirt, #2b79c2));
+}
+
+.soc-rpg-character .sprite-arm.left {
+  left: -7px;
+}
+
+.soc-rpg-character .sprite-arm.right {
+  right: -7px;
+}
+
+.soc-rpg-character .sprite-legs {
+  left: 8px;
+  top: 27px;
+  display: flex;
+  gap: 3px;
+  width: auto;
+  height: auto;
+  border: 0;
+  background: transparent;
+}
+
+.soc-rpg-character .sprite-legs span {
+  position: relative;
+  top: auto;
+  left: auto;
+  width: 6px;
+  height: 8px;
+  border: 2px solid #101820;
+  background: var(--pants, #1d2b39);
+  box-shadow: none;
+}
+
+/* Image-based directional sprites from the supplied character sheet. */
+.soc-rpg-character.analyst-a,
+.soc-rpg-character.analyst-b,
+.soc-rpg-character.manager-walk,
+.soc-rpg-character.cooler-chat,
+.soc-rpg-character.janitor {
+  width: 32px;
+  height: 44px;
+  filter: drop-shadow(0 4px 0 rgba(0, 0, 0, 0.36));
+}
+
+.soc-rpg-character .agent-frame {
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  width: 32px;
+  height: 44px;
+  object-fit: contain;
+  object-position: center bottom;
+  opacity: 0;
+  transform: translateX(-50%);
+  image-rendering: pixelated;
+  user-select: none;
+  pointer-events: none;
+}
+
+.soc-rpg-character .sprite-shadow {
+  left: 4px;
+  top: 39px;
+  width: 24px;
+  height: 6px;
+  z-index: 0;
+}
+
+.soc-rpg-character .agent-frame {
+  z-index: 1;
+}
+
+.soc-rpg-character.analyst-a .agent-frame {
+  animation-duration: 18s, 0.55s;
+}
+
+.soc-rpg-character.analyst-b .agent-frame {
+  animation-duration: 22s, 0.55s;
+}
+
+.soc-rpg-character.manager-walk .agent-frame {
+  animation-duration: 24s, 0.55s;
+}
+
+.soc-rpg-character.cooler-chat .agent-frame {
+  animation-duration: 15s, 0.55s;
+}
+
+.soc-rpg-character.janitor .agent-frame {
+  animation-duration: 26s, 0.55s;
+}
+
+.soc-rpg-character .agent-frame {
+  animation-timing-function: steps(1, end), steps(2, end);
+  animation-iteration-count: infinite, infinite;
+}
+
+.soc-rpg-character .agent-frame.front { animation-name: agent-front-off, agent-step-bob; }
+.soc-rpg-character .agent-frame.back { animation-name: agent-back-off, agent-step-bob; }
+.soc-rpg-character .agent-frame.left { animation-name: agent-left-off, agent-step-bob; }
+.soc-rpg-character .agent-frame.right { animation-name: agent-right-off, agent-step-bob; }
+
+.soc-rpg-character.analyst-a .agent-frame.front { animation-name: agent-a-front, agent-step-bob; }
+.soc-rpg-character.analyst-a .agent-frame.back { animation-name: agent-a-back, agent-step-bob; }
+.soc-rpg-character.analyst-a .agent-frame.left { animation-name: agent-a-left, agent-step-bob; }
+.soc-rpg-character.analyst-a .agent-frame.right { animation-name: agent-a-right, agent-step-bob; }
+
+.soc-rpg-character.analyst-b .agent-frame.front { animation-name: agent-b-front, agent-step-bob; }
+.soc-rpg-character.analyst-b .agent-frame.back { animation-name: agent-b-back, agent-step-bob; }
+.soc-rpg-character.analyst-b .agent-frame.left { animation-name: agent-b-left, agent-step-bob; }
+.soc-rpg-character.analyst-b .agent-frame.right { animation-name: agent-b-right, agent-step-bob; }
+
+.soc-rpg-character.manager-walk .agent-frame.front { animation-name: agent-manager-front, agent-step-bob; }
+.soc-rpg-character.manager-walk .agent-frame.back { animation-name: agent-manager-back, agent-step-bob; }
+.soc-rpg-character.manager-walk .agent-frame.left { animation-name: agent-manager-left, agent-step-bob; }
+.soc-rpg-character.manager-walk .agent-frame.right { animation-name: agent-manager-right, agent-step-bob; }
+
+.soc-rpg-character.cooler-chat .agent-frame.front { animation-name: agent-cooler-front, agent-step-bob; }
+.soc-rpg-character.cooler-chat .agent-frame.back { animation-name: agent-cooler-back, agent-step-bob; }
+.soc-rpg-character.cooler-chat .agent-frame.left { animation-name: agent-cooler-left, agent-step-bob; }
+.soc-rpg-character.cooler-chat .agent-frame.right { animation-name: agent-cooler-right, agent-step-bob; }
+
+.soc-rpg-character.janitor .agent-frame.front { animation-name: agent-janitor-front, agent-step-bob; }
+.soc-rpg-character.janitor .agent-frame.back { animation-name: agent-janitor-back, agent-step-bob; }
+.soc-rpg-character.janitor .agent-frame.left { animation-name: agent-janitor-left, agent-step-bob; }
+.soc-rpg-character.janitor .agent-frame.right { animation-name: agent-janitor-right, agent-step-bob; }
+
+@keyframes agent-step-bob {
+  0%, 100% { margin-bottom: 0; }
+  50% { margin-bottom: 2px; }
+}
+
+@keyframes agent-front-off { 0%, 100% { opacity: 0; } }
+@keyframes agent-back-off { 0%, 100% { opacity: 0; } }
+@keyframes agent-left-off { 0%, 100% { opacity: 0; } }
+@keyframes agent-right-off { 0%, 100% { opacity: 0; } }
+
+@keyframes agent-a-right { 0%, 23.99% { opacity: 1; } 24%, 100% { opacity: 0; } }
+@keyframes agent-a-back { 0%, 23.99%, 42%, 100% { opacity: 0; } 24%, 41.99% { opacity: 1; } }
+@keyframes agent-a-left { 0%, 41.99%, 62%, 77.99% { opacity: 0; } 42%, 61.99%, 78%, 100% { opacity: 1; } }
+@keyframes agent-a-front { 0%, 61.99%, 78%, 100% { opacity: 0; } 62%, 77.99% { opacity: 1; } }
+
+@keyframes agent-b-right { 0%, 51.99% { opacity: 1; } 52%, 100% { opacity: 0; } }
+@keyframes agent-b-back { 0%, 51.99%, 74%, 100% { opacity: 0; } 52%, 73.99% { opacity: 1; } }
+@keyframes agent-b-left { 0%, 73.99% { opacity: 0; } 74%, 100% { opacity: 1; } }
+@keyframes agent-b-front { 0%, 100% { opacity: 0; } }
+
+@keyframes agent-manager-right { 0%, 33.99%, 58%, 77.99% { opacity: 1; } 34%, 57.99%, 78%, 100% { opacity: 0; } }
+@keyframes agent-manager-front { 0%, 33.99%, 58%, 100% { opacity: 0; } 34%, 57.99% { opacity: 1; } }
+@keyframes agent-manager-left { 0%, 77.99% { opacity: 0; } 78%, 100% { opacity: 1; } }
+@keyframes agent-manager-back { 0%, 100% { opacity: 0; } }
+
+@keyframes agent-cooler-right { 0%, 24.99% { opacity: 1; } 25%, 100% { opacity: 0; } }
+@keyframes agent-cooler-front { 0%, 24.99%, 50%, 100% { opacity: 0; } 25%, 49.99% { opacity: 1; } }
+@keyframes agent-cooler-left { 0%, 49.99%, 75%, 100% { opacity: 0; } 50%, 74.99% { opacity: 1; } }
+@keyframes agent-cooler-back { 0%, 74.99% { opacity: 0; } 75%, 100% { opacity: 1; } }
+
+@keyframes agent-janitor-right { 0%, 79.99% { opacity: 1; } 80%, 100% { opacity: 0; } }
+@keyframes agent-janitor-left { 0%, 79.99% { opacity: 0; } 80%, 100% { opacity: 1; } }
+@keyframes agent-janitor-front { 0%, 100% { opacity: 0; } }
+@keyframes agent-janitor-back { 0%, 100% { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .soc-rpg-character .agent-frame {
+    animation: none;
+  }
+
+  .soc-rpg-character .agent-frame.front {
+    opacity: 1;
+  }
+}
