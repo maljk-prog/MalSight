@@ -9,7 +9,7 @@ export default function DashboardTabs({ kevData }: { kevData: any }) {
   const [tab, setTab] = useState("kev");
 
   return (
-    <section className="rounded-3xl border border-[#8DA99B]/40 bg-[#E6E4DE]/90 p-6 text-[#243B32] shadow-2xl">
+    <section className="rounded-3xl border border-[#8DA99B]/60 bg-[#E6E4DE]/88 p-6 text-[#243B32] shadow-2xl shadow-[#13231D]/35 backdrop-blur">
       <div className="mb-6 flex gap-3">
         <button
           onClick={() => setTab("kev")}

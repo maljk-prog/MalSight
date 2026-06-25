@@ -8,10 +8,10 @@ export default async function Home() {
   const kevData = await res.json();
 
   return (
-    <main className="min-h-screen bg-[#E6E4DE] px-8 py-10 text-[#243B32]">
-      <div className="mx-auto max-w-7xl space-y-8">
-        <header className="rounded-3xl border border-[#8DA99B] bg-[#C8DDD2] p-10 shadow-xl">
-          <p className="mb-4 inline-flex rounded-full border border-[#3F6B5A] px-4 py-2 text-sm font-semibold text-[#243B32]">
+    <main className="cyber-background min-h-screen px-8 py-10 text-[#243B32]">
+      <div className="relative z-10 mx-auto max-w-7xl space-y-8">
+        <header className="rounded-3xl border border-[#8DA99B]/70 bg-[#C8DDD2]/92 p-10 shadow-2xl shadow-[#13231D]/40 backdrop-blur">
+          <p className="mb-4 inline-flex rounded-full border border-[#3F6B5A] bg-[#E6E4DE]/70 px-4 py-2 text-sm font-semibold text-[#243B32]">
             Daily security intelligence for defenders
           </p>
 
@@ -25,14 +25,14 @@ export default async function Home() {
           </p>
 
           <div className="mt-8 flex gap-4">
-            <div className="rounded-2xl bg-[#E6E4DE] p-5">
+            <div className="rounded-2xl bg-[#E6E4DE]/85 p-5 shadow-lg shadow-[#243B32]/10">
               <p className="text-sm text-[#243B32]">Catalog version</p>
               <p className="text-2xl font-bold text-[#243B32]">
                 {kevData.catalogVersion}
               </p>
             </div>
 
-            <div className="rounded-2xl bg-[#E6E4DE] p-5">
+            <div className="rounded-2xl bg-[#E6E4DE]/85 p-5 shadow-lg shadow-[#243B32]/10">
               <p className="text-sm text-[#243B32]">Total KEVs</p>
               <p className="text-2xl font-bold text-[#243B32]">
                 {kevData.count.toLocaleString()}
