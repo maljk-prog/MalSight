@@ -4,7 +4,7 @@ const CISA_KEV_FEED =
   "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json";
 
 export default async function Home() {
-  const res = await fetch(CISA_KEV_FEED, { next: { revalidate: 3600 } });
+  const res = await fetch(CISA_KEV_FEED, { next: { revalidate: 86400 } });
   const kevData = await res.json();
 
   return (

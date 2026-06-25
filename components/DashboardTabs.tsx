@@ -29,7 +29,7 @@ export default function DashboardTabs({ kevData }: { kevData: any }) {
         </button>
       </div>
 
-      {tab === "kev" && <KevTable vulnerabilities={kevData.vulnerabilities.slice(0, 20)} />}
+      {tab === "kev" && <KevTable vulnerabilities={kevData.vulnerabilities} />}
       {tab === "news" && <NewsFeed />}
     </section>
   );

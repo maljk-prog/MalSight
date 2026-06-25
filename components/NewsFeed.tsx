@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type NewsItem = {
   source: string;
@@ -19,14 +19,31 @@ type NewsResponse = {
 export default function NewsFeed() {
   const [items, setItems] = useState<NewsItem[]>([]);
   const [page, setPage] = useState(0);
+  const [keyword, setKeyword] = useState("");
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">(
     "loading",
   );
 
+  const filteredItems = useMemo(() => {
+    const normalizedKeyword = keyword.trim().toLowerCase();
+
+    if (!normalizedKeyword) return items;
+
+    return items.filter((item) =>
+      [item.source, item.title, item.contentSnippet, item.pubDate]
+        .join(" ")
+        .toLowerCase()
+        .includes(normalizedKeyword),
+    );
+  }, [items, keyword]);
+
   const pageSize = 10;
-  const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
-  const visibleItems = items.slice(page * pageSize, page * pageSize + pageSize);
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize));
+  const visibleItems = filteredItems.slice(
+    page * pageSize,
+    page * pageSize + pageSize,
+  );
 
   useEffect(() => {
     fetch("/api/news")
@@ -57,7 +74,7 @@ export default function NewsFeed() {
           </h2>
           <p className="mt-2 text-[#466357]">
             Daily feed from credible cybersecurity reporting sources. Each card
-            opens the original article.
+            opens the original article. Search by source, title, or summary.
           </p>
         </div>
 
@@ -83,6 +100,24 @@ export default function NewsFeed() {
         </div>
       </div>
 
+      <div className="mb-4 rounded-2xl border border-[#8DA99B]/50 bg-white/50 p-4">
+        <label className="block">
+          <span className="mb-2 block text-sm font-bold text-[#466357]">
+            Search news
+          </span>
+          <input
+            type="search"
+            value={keyword}
+            onChange={(event) => {
+              setKeyword(event.target.value);
+              setPage(0);
+            }}
+            placeholder="Source, title, keyword..."
+            className="w-full rounded-xl border border-[#8DA99B] bg-white/80 px-4 py-3 text-sm font-semibold text-[#243B32] outline-none focus:border-[#3F6B5A]"
+          />
+        </label>
+      </div>
+
       <div className="min-h-[620px] space-y-4 rounded-2xl border border-[#8DA99B]/50 bg-white/50 p-4">
         {status === "loading" && (
           <div className="rounded-2xl bg-[#E6E4DE] p-5 text-[#466357]">
@@ -98,7 +133,9 @@ export default function NewsFeed() {
 
         {status === "ready" && visibleItems.length === 0 && (
           <div className="rounded-2xl bg-[#E6E4DE] p-5 text-[#466357]">
-            No articles are available right now.
+            {keyword.trim()
+              ? "No articles match that keyword."
+              : "No articles are available right now."}
           </div>
         )}
 
@@ -141,7 +178,7 @@ export default function NewsFeed() {
             Previous
           </button>
           <p className="text-sm font-semibold text-[#466357]">
-            Showing {visibleItems.length} of {items.length}
+            Showing {visibleItems.length} of {filteredItems.length}
           </p>
           <button
             type="button"
