@@ -8,6 +8,7 @@ type CountrySummary = {
   attacks: number;
   reports: number;
   ipCount: number;
+  daysSeen: number;
   latitude: number;
   longitude: number;
 };
@@ -16,6 +17,7 @@ type ThreatSource = {
   ip: string;
   attacks: number;
   reports: number;
+  daysSeen: number;
   firstSeen: string;
   lastSeen: string;
   country: string;
@@ -31,26 +33,67 @@ type ThreatMapResponse = {
   updatedAt?: string;
   source?: string;
   warning?: string;
+  telemetryDates?: string[];
+  telemetryWindow?: string;
   countries?: CountrySummary[];
   sources?: ThreatSource[];
 };
 
-const LAND_MASSES = [
-  "M151 139 C117 160 86 208 89 266 C93 329 140 352 185 332 C224 315 231 262 216 221 C204 188 193 152 151 139 Z",
-  "M246 302 C219 345 223 398 254 449 C282 496 320 492 331 432 C340 385 311 342 286 309 C273 293 259 291 246 302 Z",
-  "M454 137 C404 150 372 188 379 232 C385 269 436 281 479 262 C525 241 569 253 602 224 C640 189 614 142 557 133 C521 127 488 127 454 137 Z",
-  "M501 280 C459 300 427 358 442 420 C459 489 522 507 562 461 C590 428 584 369 560 323 C546 296 526 272 501 280 Z",
-  "M608 259 C593 280 611 310 655 318 C702 326 739 299 740 267 C741 237 706 221 668 227 C639 231 621 242 608 259 Z",
-  "M710 151 C671 160 652 193 669 220 C689 252 750 248 796 229 C840 212 877 215 909 194 C887 157 831 139 766 144 C746 145 727 147 710 151 Z",
-  "M772 342 C741 357 729 394 749 424 C772 460 828 453 852 417 C872 386 850 348 812 338 C798 334 784 335 772 342 Z",
-  "M668 420 C655 440 672 468 706 473 C740 478 765 457 757 432 C750 410 686 394 668 420 Z",
-];
+type GeoJsonFeature = {
+  id?: string;
+  properties?: {
+    name?: string;
+  };
+  geometry?: {
+    type: "Polygon" | "MultiPolygon";
+    coordinates: number[][][] | number[][][][];
+  };
+};
+
+type GeoJsonCollection = {
+  features?: GeoJsonFeature[];
+};
+
+const WORLD_ATLAS_URL =
+  "https://cdn.jsdelivr.net/gh/johan/world.geo.json@master/countries.geo.json";
 
 function project(longitude: number, latitude: number) {
   return {
     x: ((longitude + 180) / 360) * 1000,
-    y: ((90 - latitude) / 180) * 520,
+    y: ((83 - latitude) / 166) * 520,
   };
+}
+
+function polygonToPath(rings: number[][][]) {
+  return rings
+    .map((ring) =>
+      ring
+        .map(([longitude, latitude], index) => {
+          const point = project(longitude, latitude);
+          return `${index === 0 ? "M" : "L"}${point.x.toFixed(2)} ${point.y.toFixed(2)}`;
+        })
+        .join(" ")
+        .concat(" Z"),
+    )
+    .join(" ");
+}
+
+function featureToPath(feature: GeoJsonFeature) {
+  if (!feature.geometry) return "";
+
+  if (feature.geometry.type === "Polygon") {
+    return polygonToPath(feature.geometry.coordinates as number[][][]);
+  }
+
+  return (feature.geometry.coordinates as number[][][][])
+    .map((polygon) => polygonToPath(polygon))
+    .join(" ");
+}
+
+function heatColor(intensity: number) {
+  if (intensity > 0.72) return "#FF3B30";
+  if (intensity > 0.42) return "#FF8A00";
+  return "#FFD166";
 }
 
 function formatNumber(value: number) {
@@ -59,6 +102,7 @@ function formatNumber(value: number) {
 
 export default function ThreatMap() {
   const [data, setData] = useState<ThreatMapResponse | null>(null);
+  const [mapFeatures, setMapFeatures] = useState<GeoJsonFeature[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">(
     "loading",
   );
@@ -79,6 +123,13 @@ export default function ThreatMap() {
       .catch(() => setStatus("error"));
   }, []);
 
+  useEffect(() => {
+    fetch(WORLD_ATLAS_URL)
+      .then((response) => response.json() as Promise<GeoJsonCollection>)
+      .then((payload) => setMapFeatures(payload.features || []))
+      .catch(() => setMapFeatures([]));
+  }, []);
+
   const countries = data?.countries || [];
   const sources = data?.sources || [];
   const maxAttacks = Math.max(...countries.map((country) => country.attacks), 1);
@@ -87,8 +138,9 @@ export default function ThreatMap() {
       attacks: countries.reduce((sum, country) => sum + country.attacks, 0),
       reports: countries.reduce((sum, country) => sum + country.reports, 0),
       ips: sources.length,
+      days: data?.telemetryDates?.length || 0,
     }),
-    [countries, sources],
+    [countries, data?.telemetryDates?.length, sources],
   );
 
   return (
@@ -99,15 +151,16 @@ export default function ThreatMap() {
             GLOBAL THREAT MAP
           </p>
           <h2 className="mt-2 text-3xl font-black">
-            Public attack telemetry heatmap
+            3-day public attack heatmap
           </h2>
           <p className="mt-2 max-w-3xl text-[#466357]">
-            Top globally reported source IPs from SANS ISC/DShield, enriched
-            with GeoIP location data and aggregated into country heat points.
+            Top globally reported source IPs from SANS ISC/DShield over the
+            last 3 populated telemetry days, enriched with GeoIP and plotted on
+            a real world atlas.
           </p>
         </div>
 
-        <div className="grid grid-cols-3 gap-3 text-center text-sm font-semibold text-[#243B32]">
+        <div className="grid grid-cols-4 gap-3 text-center text-sm font-semibold text-[#243B32]">
           <div className="rounded-2xl bg-white/60 p-3">
             <p className="text-2xl font-black">{formatNumber(totals.ips)}</p>
             <p>IPs</p>
@@ -117,6 +170,12 @@ export default function ThreatMap() {
               {formatNumber(countries.length)}
             </p>
             <p>Countries</p>
+          </div>
+          <div className="rounded-2xl bg-white/60 p-3">
+            <p className="text-2xl font-black">
+              {formatNumber(totals.days)}
+            </p>
+            <p>Days</p>
           </div>
           <div className="rounded-2xl bg-white/60 p-3">
             <p className="text-2xl font-black">
@@ -143,14 +202,25 @@ export default function ThreatMap() {
 
         {status === "ready" && (
           <>
-            <div className="relative overflow-hidden rounded-2xl bg-[#243B32]">
+            <div className="relative overflow-hidden rounded-2xl bg-[#13231D]">
               <svg
                 viewBox="0 0 1000 520"
                 role="img"
                 aria-label="World heatmap of public attack source telemetry"
                 className="h-[520px] w-full"
               >
-                <rect width="1000" height="520" fill="#243B32" />
+                <defs>
+                  <filter id="heat-blur" x="-40%" y="-40%" width="180%" height="180%">
+                    <feGaussianBlur stdDeviation="18" />
+                  </filter>
+                  <radialGradient id="heat-core">
+                    <stop offset="0%" stopColor="#FFF3B0" stopOpacity="1" />
+                    <stop offset="42%" stopColor="#FF8A00" stopOpacity="0.88" />
+                    <stop offset="100%" stopColor="#FF3B30" stopOpacity="0" />
+                  </radialGradient>
+                </defs>
+
+                <rect width="1000" height="520" fill="#13231D" />
                 {[100, 200, 300, 400, 500, 600, 700, 800, 900].map((x) => (
                   <line
                     key={`x-${x}`}
@@ -159,7 +229,7 @@ export default function ThreatMap() {
                     y1="0"
                     y2="520"
                     stroke="#8DA99B"
-                    strokeOpacity="0.14"
+                    strokeOpacity="0.12"
                   />
                 ))}
                 {[80, 160, 240, 320, 400, 480].map((y) => (
@@ -170,59 +240,89 @@ export default function ThreatMap() {
                     y1={y}
                     y2={y}
                     stroke="#8DA99B"
-                    strokeOpacity="0.14"
-                  />
-                ))}
-                {LAND_MASSES.map((path) => (
-                  <path
-                    key={path}
-                    d={path}
-                    fill="#C8DDD2"
-                    fillOpacity="0.72"
-                    stroke="#8DA99B"
-                    strokeOpacity="0.35"
+                    strokeOpacity="0.12"
                   />
                 ))}
 
-                {countries.map((country) => {
-                  const point = project(country.longitude, country.latitude);
-                  const intensity = Math.sqrt(country.attacks / maxAttacks);
-                  const radius = 10 + intensity * 34;
+                <g>
+                  {mapFeatures.map((feature, index) => (
+                    <path
+                      key={`${feature.id || feature.properties?.name || "country"}-${index}`}
+                      d={featureToPath(feature)}
+                      fill="#9FB7AA"
+                      fillOpacity="0.42"
+                      stroke="#C8DDD2"
+                      strokeOpacity="0.32"
+                      strokeWidth="0.7"
+                    />
+                  ))}
+                </g>
 
-                  return (
-                    <g key={country.countryCode}>
+                <g filter="url(#heat-blur)" opacity="0.94">
+                  {countries.map((country) => {
+                    const point = project(country.longitude, country.latitude);
+                    const intensity = Math.sqrt(country.attacks / maxAttacks);
+                    const radius = 22 + intensity * 92;
+
+                    return (
                       <circle
-                        cx={point.x}
-                        cy={point.y}
-                        r={radius * 1.8}
-                        fill="#D6C89B"
-                        opacity="0.16"
-                      />
-                      <circle
+                        key={`glow-${country.countryCode}`}
                         cx={point.x}
                         cy={point.y}
                         r={radius}
-                        fill="#D6C89B"
-                        opacity="0.72"
+                        fill="url(#heat-core)"
+                        opacity={0.38 + intensity * 0.48}
                       />
-                      <circle
-                        cx={point.x}
-                        cy={point.y}
-                        r="4"
-                        fill="#F5F4EF"
-                      />
-                      <title>
-                        {country.country}: {formatNumber(country.attacks)}{" "}
-                        attacks from {country.ipCount} IPs
-                      </title>
-                    </g>
-                  );
-                })}
+                    );
+                  })}
+                </g>
+
+                <g>
+                  {countries.map((country) => {
+                    const point = project(country.longitude, country.latitude);
+                    const intensity = Math.sqrt(country.attacks / maxAttacks);
+                    const radius = 5 + intensity * 18;
+
+                    return (
+                      <g key={country.countryCode}>
+                        <circle
+                          cx={point.x}
+                          cy={point.y}
+                          r={radius}
+                          fill={heatColor(intensity)}
+                          fillOpacity="0.82"
+                          stroke="#FFF3B0"
+                          strokeOpacity="0.7"
+                          strokeWidth="1.5"
+                        />
+                        <circle
+                          cx={point.x}
+                          cy={point.y}
+                          r="2.5"
+                          fill="#FFFFFF"
+                          fillOpacity="0.95"
+                        />
+                        <title>
+                          {country.country}: {formatNumber(country.attacks)}{" "}
+                          attacks from {country.ipCount} IPs over{" "}
+                          {country.daysSeen} observed IP-days
+                        </title>
+                      </g>
+                    );
+                  })}
+                </g>
               </svg>
+
+              {mapFeatures.length === 0 && (
+                <div className="absolute inset-0 flex items-center justify-center bg-[#13231D]/75 text-sm font-bold text-[#C8DDD2]">
+                  Loading world atlas...
+                </div>
+              )}
             </div>
 
             <div className="mt-4 flex flex-col gap-2 text-sm font-semibold text-[#466357] md:flex-row md:items-center md:justify-between">
               <p>{data?.source}</p>
+              <p>{data?.telemetryWindow}</p>
               {data?.updatedAt && (
                 <p>
                   Updated{" "}
@@ -267,7 +367,8 @@ export default function ThreatMap() {
                   </div>
                   <p className="mt-1 text-sm font-semibold text-[#466357]">
                     {country.ipCount} source IPs,{" "}
-                    {formatNumber(country.reports)} reports
+                    {formatNumber(country.reports)} reports, {country.daysSeen}{" "}
+                    observed IP-days
                   </p>
                 </div>
               ))}
@@ -304,7 +405,8 @@ export default function ThreatMap() {
                     {source.asn ? `, ASN ${source.asn}` : ""}
                   </p>
                   <p className="mt-1 text-xs font-semibold text-[#466357]">
-                    Last seen {source.lastSeen}
+                    Seen on {source.daysSeen} of the selected days. Last seen{" "}
+                    {source.lastSeen}
                   </p>
                 </div>
               ))}

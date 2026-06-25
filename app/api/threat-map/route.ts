@@ -28,6 +28,7 @@ type EnrichedSource = {
   ip: string;
   attacks: number;
   reports: number;
+  daysSeen: number;
   firstSeen: string;
   lastSeen: string;
   country: string;
@@ -45,8 +46,15 @@ type CountrySummary = {
   attacks: number;
   reports: number;
   ipCount: number;
+  daysSeen: number;
   latitude: number;
   longitude: number;
+};
+
+type AggregatedSource = DShieldSource & {
+  attacks: number;
+  count: number;
+  daysSeen: number;
 };
 
 function dateDaysAgo(daysAgo: number) {
@@ -81,18 +89,59 @@ async function fetchDShieldSourcesForDate(date: string) {
 }
 
 async function fetchDShieldSources() {
-  for (const date of [dateDaysAgo(0), dateDaysAgo(1), dateDaysAgo(2)]) {
+  const populatedDays: { date: string; sources: DShieldSource[] }[] = [];
+
+  for (const date of Array.from({ length: 7 }, (_, index) =>
+    dateDaysAgo(index),
+  )) {
     const sources = await fetchDShieldSourcesForDate(date);
 
     if (sources.length > 0) {
-      return { date, sources };
+      populatedDays.push({ date, sources });
+    }
+
+    if (populatedDays.length === 3) {
+      break;
     }
   }
 
-  return { date: dateDaysAgo(0), sources: [] };
+  return {
+    dates: populatedDays.map((day) => day.date),
+    sources: aggregateSources(populatedDays),
+  };
 }
 
-async function geolocateSource(source: DShieldSource) {
+function aggregateSources(
+  days: { date: string; sources: DShieldSource[] }[],
+): AggregatedSource[] {
+  const sources = new Map<string, AggregatedSource>();
+
+  days.forEach(({ sources: daySources }) => {
+    daySources.forEach((source) => {
+      const current =
+        sources.get(source.ip) ||
+        ({
+          ...source,
+          attacks: 0,
+          count: 0,
+          daysSeen: 0,
+        } satisfies AggregatedSource);
+
+      current.attacks += toNumber(source.attacks);
+      current.count += toNumber(source.count);
+      current.daysSeen += 1;
+      current.firstseen =
+        source.firstseen < current.firstseen ? source.firstseen : current.firstseen;
+      current.lastseen =
+        source.lastseen > current.lastseen ? source.lastseen : current.lastseen;
+      sources.set(source.ip, current);
+    });
+  });
+
+  return Array.from(sources.values()).sort((a, b) => b.attacks - a.attacks);
+}
+
+async function geolocateSource(source: AggregatedSource) {
   const response = await fetch(`https://ipwho.is/${source.ip}`, {
     next: { revalidate: 86400 },
   });
@@ -111,8 +160,9 @@ async function geolocateSource(source: DShieldSource) {
 
   return {
     ip: source.ip,
-    attacks: toNumber(source.attacks),
-    reports: toNumber(source.count),
+    attacks: source.attacks,
+    reports: source.count,
+    daysSeen: source.daysSeen,
     firstSeen: source.firstseen,
     lastSeen: source.lastseen,
     country: geo.country || "Unknown",
@@ -137,14 +187,16 @@ function aggregateCountries(sources: EnrichedSource[]) {
         countryCode: source.countryCode,
         attacks: 0,
         reports: 0,
-        ipCount: 0,
-        latitude: 0,
-        longitude: 0,
+      ipCount: 0,
+      daysSeen: 0,
+      latitude: 0,
+      longitude: 0,
       } satisfies CountrySummary);
 
     current.attacks += source.attacks;
     current.reports += source.reports;
     current.ipCount += 1;
+    current.daysSeen += source.daysSeen;
     current.latitude += source.latitude;
     current.longitude += source.longitude;
     countries.set(key, current);
@@ -160,9 +212,9 @@ function aggregateCountries(sources: EnrichedSource[]) {
 }
 
 export async function GET() {
-  const { date, sources } = await fetchDShieldSources();
+  const { dates, sources } = await fetchDShieldSources();
   const enriched = (
-    await Promise.all(sources.map((source) => geolocateSource(source)))
+    await Promise.all(sources.slice(0, 100).map((source) => geolocateSource(source)))
   )
     .filter((source): source is EnrichedSource => Boolean(source))
     .sort((a, b) => b.attacks - a.attacks);
@@ -173,7 +225,11 @@ export async function GET() {
     source:
       "SANS Internet Storm Center / DShield top source IP telemetry enriched with GeoIP coordinates",
     sourceUrl: "https://isc.sans.edu/api/",
-    telemetryDate: date,
+    telemetryDates: dates,
+    telemetryWindow:
+      dates.length > 0
+        ? `${dates[dates.length - 1]} through ${dates[0]}`
+        : "No populated DShield days available",
     geoIpSource: "ipwho.is",
     warning:
       "DShield source-IP summaries are public telemetry and may include false positives. Do not use this as a blocklist.",
