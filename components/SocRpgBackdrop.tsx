@@ -11,16 +11,9 @@ export default function SocRpgBackdrop() {
   return (
     <div className="soc-rpg-backdrop" aria-hidden="true">
       <div className="soc-rpg-room">
-        <div className="soc-rpg-label entrance">ENTRANCE</div>
-        <div className="soc-rpg-label exit">EXIT</div>
-        <div className="soc-rpg-label manager">OPS MANAGER</div>
-        <div className="soc-rpg-label board">STATUS BOARD</div>
         <div className="soc-rpg-label video">VIDEO WALL</div>
-        <div className="soc-rpg-label racks">SERVER RACKS</div>
         <div className="soc-rpg-label stations">ANALYST WORKSTATIONS</div>
-        <div className="soc-rpg-label tools">TOOLS</div>
         <div className="soc-rpg-label cooler">COOLER</div>
-        <div className="soc-rpg-label lounge">LOUNGE</div>
 
         <div className="soc-rpg-door top-door" />
         <div className="soc-rpg-door bottom-door" />

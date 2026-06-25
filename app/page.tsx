@@ -13,8 +13,8 @@ export default async function Home() {
       <div className="relative z-10 mx-auto max-w-7xl space-y-8">
         <header className="relative min-h-[360px] overflow-hidden rounded-3xl border border-[#8DA99B]/70 bg-[#C8DDD2]/92 p-10 shadow-2xl shadow-[#13231D]/40 backdrop-blur">
           <SocRpgBackdrop />
-          <div className="absolute inset-0 z-[1] bg-gradient-to-r from-[#C8DDD2]/90 via-[#C8DDD2]/68 to-[#C8DDD2]/35" />
-          <div className="relative z-[2]">
+          <div className="absolute inset-0 z-[1] bg-gradient-to-r from-[#C8DDD2]/92 via-[#C8DDD2]/72 to-[#C8DDD2]/10" />
+          <div className="relative z-[2] max-w-4xl">
             <p className="mb-4 inline-flex rounded-full border border-[#3F6B5A] bg-[#E6E4DE]/70 px-4 py-2 text-sm font-semibold text-[#243B32]">
               Daily security intelligence for defenders
             </p>
