@@ -26,6 +26,7 @@ type ImpactProfile = {
   ciaImpact: string;
   likelihood: string;
   riskResponse: string;
+  simpleAnalogy: string;
   humanImpact: string[];
 };
 
@@ -64,6 +65,8 @@ const IMPACT_PROFILES: { keywords: string[]; profile: ImpactProfile }[] = [
       ciaImpact: "Availability and integrity are the primary CIA concerns",
       likelihood: "Elevated when patient-facing operations rely on shared digital platforms",
       riskResponse: "Reduce through tested downtime procedures, segmentation, backups, and incident response exercises",
+      simpleAnalogy:
+        "Like a hospital losing the clipboard, phone tree, and appointment book at the same time. Care can still happen, but every step takes longer and mistakes are easier to make.",
       humanImpact: [
         "Appointments or procedures can be delayed while staff fall back to manual workflows",
         "Patients may wait longer for prescriptions, lab results, referrals, or billing answers",
@@ -83,6 +86,8 @@ const IMPACT_PROFILES: { keywords: string[]; profile: ImpactProfile }[] = [
       ciaImpact: "Availability is dominant, with integrity risk around production and inventory data",
       likelihood: "Moderate when farms, processors, and suppliers depend on connected systems",
       riskResponse: "Reduce through manual fallback plans, OT isolation, supplier redundancy, and recovery-time objectives",
+      simpleAnalogy:
+        "Like a farm or food plant losing the dashboard that tells workers what to harvest, process, ship, and restock. The food may exist, but getting it to shelves becomes slower and less predictable.",
       humanImpact: [
         "Farm or processing operations may slow while systems are restored",
         "Reduced production can tighten availability for ingredients or finished goods",
@@ -102,6 +107,8 @@ const IMPACT_PROFILES: { keywords: string[]; profile: ImpactProfile }[] = [
       ciaImpact: "Confidentiality and availability are the primary CIA concerns",
       likelihood: "Moderate to elevated during periods of high account activity or limited IT staffing",
       riskResponse: "Reduce through MFA, least privilege, data minimization, backup testing, and awareness training",
+      simpleAnalogy:
+        "Like a school locking the doors to classrooms, gradebooks, and office files at once. Learning continues where possible, but students and staff lose the normal map for the day.",
       humanImpact: [
         "Classes, assignments, or campus services can be interrupted",
         "Students and families may lose access to schedules, grades, or financial records",
@@ -121,6 +128,8 @@ const IMPACT_PROFILES: { keywords: string[]; profile: ImpactProfile }[] = [
       ciaImpact: "Integrity and availability are dominant, with confidentiality risk for account data",
       likelihood: "Elevated because financial systems are frequent targets for fraud and extortion",
       riskResponse: "Reduce and transfer through layered fraud controls, monitoring, cyber insurance, and tested recovery plans",
+      simpleAnalogy:
+        "Like a bank branch where the vault, teller screens, and fraud desk all need extra verification before anyone can move money safely.",
       humanImpact: [
         "People may lose easy access to balances, transfers, or payment history",
         "Merchants and customers may experience delayed transactions or support backlogs",
@@ -140,6 +149,8 @@ const IMPACT_PROFILES: { keywords: string[]; profile: ImpactProfile }[] = [
       ciaImpact: "Availability and integrity are the primary CIA concerns",
       likelihood: "Moderate, but impact severity can be high because services are essential",
       riskResponse: "Reduce through OT segmentation, safety interlocks, manual operations, and disaster recovery planning",
+      simpleAnalogy:
+        "Like a control room losing confidence in its gauges. Operators can still act, but they slow down because the cost of a wrong move is high.",
       humanImpact: [
         "Operators may reduce automation and rely on manual checks",
         "Outage response, maintenance, or customer notices can slow down",
@@ -159,6 +170,8 @@ const IMPACT_PROFILES: { keywords: string[]; profile: ImpactProfile }[] = [
       ciaImpact: "Availability is dominant, with integrity risk around routing and inventory decisions",
       likelihood: "Moderate when operations depend on connected scheduling and fleet systems",
       riskResponse: "Reduce through continuity plans, alternate carriers, manual dispatch paths, and supplier risk management",
+      simpleAnalogy:
+        "Like a delivery network losing its map, schedule, and loading list. Trucks may still move, but delays stack up quickly.",
       humanImpact: [
         "Shipments, travel, or deliveries may be delayed while systems recover",
         "Businesses may struggle to restock inventory or meet customer commitments",
@@ -178,6 +191,8 @@ const IMPACT_PROFILES: { keywords: string[]; profile: ImpactProfile }[] = [
       ciaImpact: "Confidentiality and availability are dominant, with integrity risk for account actions",
       likelihood: "Elevated when exposed services, credentials, or third-party integrations are involved",
       riskResponse: "Reduce through MFA, logging, vulnerability management, least privilege, and user notification workflows",
+      simpleAnalogy:
+        "Like someone getting a copy of the master key ring and the customer service script. They can try doors, impersonate users, and create confusion before anyone notices.",
       humanImpact: [
         "People may need to reset passwords, monitor accounts, or verify suspicious messages",
         "Support teams can become overwhelmed, slowing help for everyday users",
@@ -197,6 +212,8 @@ const DEFAULT_PROFILE: ImpactProfile = {
   ciaImpact: "Availability is common, with confidentiality and integrity depending on the affected system",
   likelihood: "Context-dependent, based on exposure, control maturity, and attacker motivation",
   riskResponse: "Reduce through layered controls, recovery objectives, tabletop exercises, and vendor risk management",
+  simpleAnalogy:
+    "Like a business losing access to its front desk, filing cabinet, and staff directory. Work can continue, but everything becomes slower, more manual, and easier to misunderstand.",
   humanImpact: [
     "Employees may lose access to normal tools and switch to slower manual processes",
     "Customers may face delays, missing updates, or reduced support quality",
@@ -327,6 +344,7 @@ export async function GET() {
         ciaImpact: profile.ciaImpact,
         likelihood: profile.likelihood,
         riskResponse: profile.riskResponse,
+        simpleAnalogy: profile.simpleAnalogy,
         humanImpact: profile.humanImpact,
       };
     });

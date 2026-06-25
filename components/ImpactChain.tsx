@@ -16,6 +16,7 @@ type ImpactItem = {
   ciaImpact: string;
   likelihood: string;
   riskResponse: string;
+  simpleAnalogy: string;
   humanImpact: string[];
 };
 
@@ -204,6 +205,15 @@ export default function ImpactChain() {
                       </p>
                       <p className="mt-1 text-sm text-[#466357]">
                         {item.riskResponse}
+                      </p>
+                    </div>
+
+                    <div className="mb-4 rounded-xl border border-[#D6C89B]/70 bg-[#F5F4EF] p-4">
+                      <p className="text-xs font-bold uppercase tracking-widest text-[#3F6B5A]">
+                        Simplified analogy
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-[#466357]">
+                        {item.simpleAnalogy}
                       </p>
                     </div>
 
