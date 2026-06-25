@@ -20,6 +20,12 @@ type Article = {
 type ImpactProfile = {
   industry: string;
   affectedSystem: string;
+  protectedAsset: string;
+  threatEvent: string;
+  exposure: string;
+  ciaImpact: string;
+  likelihood: string;
+  riskResponse: string;
   humanImpact: string[];
 };
 
@@ -52,6 +58,12 @@ const IMPACT_PROFILES: { keywords: string[]; profile: ImpactProfile }[] = [
     profile: {
       industry: "Healthcare",
       affectedSystem: "Clinical scheduling, patient records, or care coordination systems",
+      protectedAsset: "Patient safety, care availability, and protected health information",
+      threatEvent: "Disruption or compromise of clinical support systems",
+      exposure: "High dependency on timely, accurate records and identity-backed workflows",
+      ciaImpact: "Availability and integrity are the primary CIA concerns",
+      likelihood: "Elevated when patient-facing operations rely on shared digital platforms",
+      riskResponse: "Reduce through tested downtime procedures, segmentation, backups, and incident response exercises",
       humanImpact: [
         "Appointments or procedures can be delayed while staff fall back to manual workflows",
         "Patients may wait longer for prescriptions, lab results, referrals, or billing answers",
@@ -65,6 +77,12 @@ const IMPACT_PROFILES: { keywords: string[]; profile: ImpactProfile }[] = [
     profile: {
       industry: "Food and Agriculture",
       affectedSystem: "Production planning, logistics, inventory, or industrial control systems",
+      protectedAsset: "Food production capacity, supply continuity, and operational technology",
+      threatEvent: "Disruption of production, planning, logistics, or control systems",
+      exposure: "Operational concentration can create single points of failure in regional supply chains",
+      ciaImpact: "Availability is dominant, with integrity risk around production and inventory data",
+      likelihood: "Moderate when farms, processors, and suppliers depend on connected systems",
+      riskResponse: "Reduce through manual fallback plans, OT isolation, supplier redundancy, and recovery-time objectives",
       humanImpact: [
         "Farm or processing operations may slow while systems are restored",
         "Reduced production can tighten availability for ingredients or finished goods",
@@ -78,6 +96,12 @@ const IMPACT_PROFILES: { keywords: string[]; profile: ImpactProfile }[] = [
     profile: {
       industry: "Education",
       affectedSystem: "Learning platforms, identity systems, payroll, or student records",
+      protectedAsset: "Student records, learning access, identity services, and campus operations",
+      threatEvent: "Compromise or outage affecting academic and administrative services",
+      exposure: "Large user populations and distributed access increase identity and data handling risk",
+      ciaImpact: "Confidentiality and availability are the primary CIA concerns",
+      likelihood: "Moderate to elevated during periods of high account activity or limited IT staffing",
+      riskResponse: "Reduce through MFA, least privilege, data minimization, backup testing, and awareness training",
       humanImpact: [
         "Classes, assignments, or campus services can be interrupted",
         "Students and families may lose access to schedules, grades, or financial records",
@@ -91,6 +115,12 @@ const IMPACT_PROFILES: { keywords: string[]; profile: ImpactProfile }[] = [
     profile: {
       industry: "Financial Services",
       affectedSystem: "Payment processing, customer portals, fraud systems, or account services",
+      protectedAsset: "Customer funds, transaction integrity, identity data, and financial trust",
+      threatEvent: "Account, payment, or fraud-control disruption",
+      exposure: "High-value data and always-on transaction systems increase attacker motivation",
+      ciaImpact: "Integrity and availability are dominant, with confidentiality risk for account data",
+      likelihood: "Elevated because financial systems are frequent targets for fraud and extortion",
+      riskResponse: "Reduce and transfer through layered fraud controls, monitoring, cyber insurance, and tested recovery plans",
       humanImpact: [
         "People may lose easy access to balances, transfers, or payment history",
         "Merchants and customers may experience delayed transactions or support backlogs",
@@ -104,6 +134,12 @@ const IMPACT_PROFILES: { keywords: string[]; profile: ImpactProfile }[] = [
     profile: {
       industry: "Utilities and Energy",
       affectedSystem: "Operational technology, dispatch, billing, or monitoring systems",
+      protectedAsset: "Essential service delivery, safety systems, and operational continuity",
+      threatEvent: "Operational technology or dispatch disruption",
+      exposure: "Cyber-physical dependencies can turn IT incidents into service-impacting events",
+      ciaImpact: "Availability and integrity are the primary CIA concerns",
+      likelihood: "Moderate, but impact severity can be high because services are essential",
+      riskResponse: "Reduce through OT segmentation, safety interlocks, manual operations, and disaster recovery planning",
       humanImpact: [
         "Operators may reduce automation and rely on manual checks",
         "Outage response, maintenance, or customer notices can slow down",
@@ -117,6 +153,12 @@ const IMPACT_PROFILES: { keywords: string[]; profile: ImpactProfile }[] = [
     profile: {
       industry: "Transportation and Logistics",
       affectedSystem: "Routing, booking, dispatch, warehouse, or fleet management systems",
+      protectedAsset: "Movement of people, goods, routing data, and delivery commitments",
+      threatEvent: "Disruption of routing, booking, dispatch, or warehouse operations",
+      exposure: "Interdependent systems can amplify small delays across suppliers and customers",
+      ciaImpact: "Availability is dominant, with integrity risk around routing and inventory decisions",
+      likelihood: "Moderate when operations depend on connected scheduling and fleet systems",
+      riskResponse: "Reduce through continuity plans, alternate carriers, manual dispatch paths, and supplier risk management",
       humanImpact: [
         "Shipments, travel, or deliveries may be delayed while systems recover",
         "Businesses may struggle to restock inventory or meet customer commitments",
@@ -130,6 +172,12 @@ const IMPACT_PROFILES: { keywords: string[]; profile: ImpactProfile }[] = [
     profile: {
       industry: "Digital Services",
       affectedSystem: "Identity, customer data, internal operations, or support systems",
+      protectedAsset: "User identity, customer data, service availability, and brand trust",
+      threatEvent: "Credential theft, data exposure, malware, or service disruption",
+      exposure: "Internet-facing services and reused credentials can expand the attack surface",
+      ciaImpact: "Confidentiality and availability are dominant, with integrity risk for account actions",
+      likelihood: "Elevated when exposed services, credentials, or third-party integrations are involved",
+      riskResponse: "Reduce through MFA, logging, vulnerability management, least privilege, and user notification workflows",
       humanImpact: [
         "People may need to reset passwords, monitor accounts, or verify suspicious messages",
         "Support teams can become overwhelmed, slowing help for everyday users",
@@ -143,6 +191,12 @@ const IMPACT_PROFILES: { keywords: string[]; profile: ImpactProfile }[] = [
 const DEFAULT_PROFILE: ImpactProfile = {
   industry: "General Business Operations",
   affectedSystem: "Internal applications, identity systems, data stores, or operational workflows",
+  protectedAsset: "Business continuity, customer trust, employee productivity, and sensitive data",
+  threatEvent: "Operational disruption, data exposure, credential abuse, or malware activity",
+  exposure: "Critical workflows often depend on identity, SaaS platforms, and third-party providers",
+  ciaImpact: "Availability is common, with confidentiality and integrity depending on the affected system",
+  likelihood: "Context-dependent, based on exposure, control maturity, and attacker motivation",
+  riskResponse: "Reduce through layered controls, recovery objectives, tabletop exercises, and vendor risk management",
   humanImpact: [
     "Employees may lose access to normal tools and switch to slower manual processes",
     "Customers may face delays, missing updates, or reduced support quality",
@@ -267,6 +321,12 @@ export async function GET() {
         ...article,
         industry: profile.industry,
         affectedSystem: profile.affectedSystem,
+        protectedAsset: profile.protectedAsset,
+        threatEvent: profile.threatEvent,
+        exposure: profile.exposure,
+        ciaImpact: profile.ciaImpact,
+        likelihood: profile.likelihood,
+        riskResponse: profile.riskResponse,
         humanImpact: profile.humanImpact,
       };
     });
