@@ -1,22 +1,37 @@
-const workstations = [
-  { left: "26%", top: "44%" },
-  { left: "43%", top: "44%" },
-  { left: "60%", top: "44%" },
-  { left: "26%", top: "67%" },
-  { left: "43%", top: "67%" },
-  { left: "60%", top: "67%" },
+const workstationRows = [
+  [
+    { left: "28%", top: "46%" },
+    { left: "40%", top: "46%" },
+    { left: "52%", top: "46%" },
+    { left: "64%", top: "46%" },
+  ],
+  [
+    { left: "28%", top: "70%" },
+    { left: "40%", top: "70%" },
+    { left: "52%", top: "70%" },
+    { left: "64%", top: "70%" },
+  ],
 ];
 
 export default function SocRpgBackdrop() {
   return (
     <div className="soc-rpg-backdrop" aria-hidden="true">
       <div className="soc-rpg-room">
+        <div className="soc-rpg-label entrance">ENTRANCE</div>
+        <div className="soc-rpg-label exit">EXIT</div>
+        <div className="soc-rpg-label manager">OPERATIONS<br />MANAGER</div>
+        <div className="soc-rpg-label board">STATUS<br />BOARD</div>
         <div className="soc-rpg-label video">VIDEO WALL</div>
+        <div className="soc-rpg-label racks">SERVER<br />RACKS</div>
         <div className="soc-rpg-label stations">ANALYST WORKSTATIONS</div>
+        <div className="soc-rpg-label tools">TOOLS &<br />STORAGE</div>
         <div className="soc-rpg-label cooler">COOLER</div>
+        <div className="soc-rpg-label lounge">LOUNGE</div>
 
         <div className="soc-rpg-door top-door" />
         <div className="soc-rpg-door bottom-door" />
+        <div className="soc-rpg-office manager-office" />
+        <div className="soc-rpg-office tools-office" />
 
         <div className="soc-rpg-manager-desk">
           <span />
@@ -42,14 +57,12 @@ export default function SocRpgBackdrop() {
           ))}
         </div>
 
-        {workstations.map((desk, index) => (
-          <div
-            key={`${desk.left}-${desk.top}`}
-            className="soc-rpg-workstation"
-            style={{ left: desk.left, top: desk.top }}
-          >
-            <span />
-            <span />
+        {workstationRows.flat().map((desk) => (
+          <div key={`${desk.left}-${desk.top}`} className="soc-rpg-workstation" style={desk}>
+            <span className="monitor" />
+            <span className="monitor" />
+            <span className="keyboard" />
+            <span className="chair" />
           </div>
         ))}
 
@@ -72,7 +85,7 @@ export default function SocRpgBackdrop() {
           <span />
         </div>
 
-        {["12% 16%", "37% 32%", "55% 34%", "72% 30%", "83% 54%", "34% 68%", "58% 68%"].map(
+        {["17% 11%", "49% 10%", "60% 10%", "34% 30%", "70% 30%", "38% 48%", "56% 48%", "38% 72%", "56% 72%", "91% 52%", "94% 82%"].map(
           (position) => {
             const [left, top] = position.split(" ");
             return <div key={position} className="soc-rpg-plant" style={{ left, top }} />;
@@ -80,19 +93,29 @@ export default function SocRpgBackdrop() {
         )}
 
         <div className="soc-rpg-character analyst-a">
-          <span />
+          <span className="head" />
+          <span className="hair" />
+          <span className="feet" />
         </div>
         <div className="soc-rpg-character analyst-b">
-          <span />
+          <span className="head" />
+          <span className="hair" />
+          <span className="feet" />
         </div>
         <div className="soc-rpg-character manager-walk">
-          <span />
+          <span className="head" />
+          <span className="hair" />
+          <span className="feet" />
         </div>
         <div className="soc-rpg-character cooler-chat">
-          <span />
+          <span className="head" />
+          <span className="hair" />
+          <span className="feet" />
         </div>
         <div className="soc-rpg-character janitor">
-          <span />
+          <span className="head" />
+          <span className="hair" />
+          <span className="feet" />
         </div>
       </div>
     </div>
