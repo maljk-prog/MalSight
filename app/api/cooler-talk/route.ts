@@ -526,6 +526,14 @@ function cyberTrendLabel(score: number) {
   return "Low";
 }
 
+function cyberTrendRiseLabel(rise: number | null | undefined) {
+  if (!Number.isFinite(rise) || Number(rise) <= 0) return "Low";
+  if (Number(rise) >= 200) return "Critical";
+  if (Number(rise) >= 100) return "Major";
+  if (Number(rise) >= 50) return "Significant";
+  return "Emerging";
+}
+
 function panicLabel(score: number) {
   if (score >= 85) return "Widespread Concern";
   if (score >= 70) return "High Concern";
@@ -734,7 +742,9 @@ function trendSignalFromItem(
   return {
     query: item.title,
     score: cyberTrend.score,
-    label: cyberTrend.label,
+    label: entry.risePercent === null || entry.risePercent === undefined
+      ? cyberTrend.label
+      : cyberTrendRiseLabel(entry.risePercent),
     traffic,
     risePercent: entry.risePercent ?? null,
     recentCount: entry.recentCount ?? null,
@@ -901,6 +911,7 @@ async function fetchFastestCyberTrend(
       index,
     }))
     .filter((entry) => entry.cyberTrend.qualifies)
+    .filter((entry) => (entry.risePercent ?? 0) > 0)
     .sort(
       (a, b) =>
         (b.risePercent ?? -1) - (a.risePercent ?? -1) ||

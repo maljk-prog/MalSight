@@ -224,6 +224,11 @@ function trendExplanation(trend: NonNullable<CoolerTalkResponse["fastestRising"]
   const source = trend.source.includes("Google News")
     ? "cybersecurity news coverage"
     : "search activity";
+  const rise = trend.risePercent ?? 0;
+
+  if (rise <= 0) {
+    return `${trend.query} is security-relevant, but MalSight is not seeing a measurable increase across ${source} versus the 30-day baseline.`;
+  }
 
   return `Interest in ${trend.query} is rising across ${source} and related cyber signals. MalSight only considers security-focused terms here and does not confirm an active incident.`;
 }
