@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type KevVulnerability = {
   cveID: string;
@@ -69,11 +69,22 @@ function groupByVendor(vulnerabilities: KevVulnerability[]) {
 
 export default function KevTable({
   vulnerabilities,
+  selectedCve = "",
+  onOpenNewsForCve,
 }: {
   vulnerabilities: KevVulnerability[];
+  selectedCve?: string;
+  onOpenNewsForCve?: (cve: string) => void;
 }) {
   const [selectedLetter, setSelectedLetter] = useState("Top 15");
   const [keyword, setKeyword] = useState("");
+
+  useEffect(() => {
+    if (!selectedCve) return;
+
+    setKeyword(selectedCve);
+    setSelectedLetter("Top 15");
+  }, [selectedCve]);
   const normalizedKeyword = keyword.trim().toLowerCase();
   const matchingVulnerabilities = useMemo(() => {
     if (!normalizedKeyword) return vulnerabilities;
@@ -293,6 +304,15 @@ export default function KevTable({
                             >
                               {vulnerability.cveID}
                             </a>
+                            {onOpenNewsForCve && (
+                              <button
+                                type="button"
+                                onClick={() => onOpenNewsForCve(vulnerability.cveID)}
+                                className="mt-3 inline-flex rounded-full border border-[#3F6B5A]/55 bg-white/70 px-3 py-1 text-xs font-black text-[#3F6B5A] transition hover:bg-white"
+                              >
+                                Public reports and news
+                              </button>
+                            )}
                             <h3 className="mt-2 text-xl font-black text-[#243B32]">
                               {vulnerability.vulnerabilityName}
                             </h3>
