@@ -23,6 +23,8 @@ type SourceAdapter = {
 
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
+const LIVE_REFRESH_MS = DAY;
+const LIVE_REFRESH_SECONDS = 24 * 60 * 60;
 const cache = new Map<string, SourceDataset>();
 
 function status(
@@ -126,10 +128,20 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
+function readNumber(value: unknown) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
+}
+
+function readUnixTimestamp(value: unknown) {
+  const seconds = readNumber(value);
+  return seconds > 0 ? new Date(seconds * 1000).toISOString() : null;
+}
+
 async function fetchCisaKev(fetcher: Fetcher, now: number) {
   const response = await fetcher(
     "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
-    { next: { revalidate: 6 * HOUR } },
+    { next: { revalidate: LIVE_REFRESH_SECONDS } },
   );
   if (!response.ok) throw new Error("CISA KEV request failed");
 
@@ -150,7 +162,7 @@ async function fetchCisaKev(fetcher: Fetcher, now: number) {
 
   return makeDataset(
     "CISA KEV",
-    6 * HOUR,
+    LIVE_REFRESH_MS,
     new Date(now).toISOString(),
     [],
     {
@@ -164,9 +176,68 @@ async function fetchCisaKev(fetcher: Fetcher, now: number) {
   );
 }
 
+async function fetchVirusTotal(fetcher: Fetcher, now: number) {
+  const apiKey = process.env.VIRUSTOTAL_API_KEY;
+  if (!apiKey) throw new Error("VirusTotal API key not configured");
+
+  const query = encodeURIComponent("type:file positives:5 fs:1d");
+  const response = await fetcher(
+    `https://www.virustotal.com/api/v3/intelligence/search?query=${query}&limit=40`,
+    {
+      headers: { "x-apikey": apiKey },
+      next: { revalidate: LIVE_REFRESH_SECONDS },
+    },
+  );
+  if (!response.ok) throw new Error("VirusTotal request failed");
+
+  const payload = await response.json();
+  if (!isObject(payload) || !Array.isArray(payload.data)) {
+    throw new Error("VirusTotal response malformed");
+  }
+
+  const iocs = payload.data
+    .map((entry: unknown): NormalizedIoc | null => {
+      if (!isObject(entry) || !isObject(entry.attributes)) return null;
+
+      const attributes = entry.attributes;
+      const stats = isObject(attributes.last_analysis_stats)
+        ? attributes.last_analysis_stats
+        : {};
+      const malicious = readNumber(stats.malicious);
+      const suspicious = readNumber(stats.suspicious);
+      const sha256 = readString(attributes.sha256);
+
+      if (malicious < 5 || !sha256) return null;
+
+      const threatClassification = isObject(attributes.popular_threat_classification)
+        ? attributes.popular_threat_classification
+        : {};
+      const threatLabel = readString(threatClassification.suggested_threat_label);
+
+      return {
+        type: "hash" as const,
+        value: sha256,
+        source: "VirusTotal",
+        firstSeen: readUnixTimestamp(attributes.first_submission_date),
+        lastSeen: readUnixTimestamp(attributes.last_submission_date),
+        malwareFamily: isMeaningfulMalwareName(threatLabel) ? threatLabel : undefined,
+        category: readString(attributes.type_description) || "malware",
+        confidence: malicious >= 10 || suspicious >= 3 ? "high" : "medium",
+      };
+    })
+    .filter((ioc): ioc is NormalizedIoc => Boolean(ioc));
+
+  if (!iocs.length) throw new Error("VirusTotal response empty");
+
+  return makeDataset("VirusTotal", LIVE_REFRESH_MS, new Date(now).toISOString(), iocs, {
+    iocVolume: iocs.length,
+    malwareSubmissions: iocs.length,
+  });
+}
+
 async function fetchUrlhaus(fetcher: Fetcher, now: number) {
   const response = await fetcher("https://urlhaus.abuse.ch/downloads/text/", {
-    next: { revalidate: 6 * HOUR },
+    next: { revalidate: LIVE_REFRESH_SECONDS },
   });
   if (!response.ok) throw new Error("URLhaus request failed");
 
@@ -188,7 +259,7 @@ async function fetchUrlhaus(fetcher: Fetcher, now: number) {
     confidence: "medium" as const,
   }));
 
-  return makeDataset("URLhaus", 6 * HOUR, new Date(now).toISOString(), iocs, {
+  return makeDataset("URLhaus", LIVE_REFRESH_MS, new Date(now).toISOString(), iocs, {
     phishingActivity: iocs.filter((ioc) => /phish|login|account|verify/i.test(ioc.value)).length,
   });
 }
@@ -197,7 +268,7 @@ async function fetchMalwareBazaar(fetcher: Fetcher, now: number) {
   const response = await fetcher("https://mb-api.abuse.ch/api/v1/", {
     method: "POST",
     body: new URLSearchParams({ query: "get_recent", selector: "100" }),
-    next: { revalidate: 6 * HOUR },
+    next: { revalidate: LIVE_REFRESH_SECONDS },
   });
   if (!response.ok) throw new Error("MalwareBazaar request failed");
 
@@ -231,7 +302,7 @@ async function fetchMalwareBazaar(fetcher: Fetcher, now: number) {
 
   if (!iocs.length) throw new Error("MalwareBazaar response empty");
 
-  return makeDataset("MalwareBazaar", 6 * HOUR, new Date(now).toISOString(), iocs, {
+  return makeDataset("MalwareBazaar", LIVE_REFRESH_MS, new Date(now).toISOString(), iocs, {
     malwareSubmissions: iocs.length,
   });
 }
@@ -241,7 +312,7 @@ async function fetchDshield(fetcher: Fetcher, now: number) {
     headers: {
       "User-Agent": "MalSight threat weather contact: github.com/maljk-prog/MalSight",
     },
-    next: { revalidate: 6 * HOUR },
+    next: { revalidate: LIVE_REFRESH_SECONDS },
   });
   if (!response.ok) throw new Error("DShield request failed");
 
@@ -260,14 +331,14 @@ async function fetchDshield(fetcher: Fetcher, now: number) {
     return total + Number(String(entry.attacks || "0").replace(/,/g, ""));
   }, 0);
 
-  return makeDataset("SANS ISC DShield", 6 * HOUR, new Date(now).toISOString(), [], {
+  return makeDataset("SANS ISC DShield", LIVE_REFRESH_MS, new Date(now).toISOString(), [], {
     internetScanning: attacks,
   });
 }
 
 async function fetchOpenPhish(fetcher: Fetcher, now: number) {
   const response = await fetcher("https://openphish.com/feed.txt", {
-    next: { revalidate: 6 * HOUR },
+    next: { revalidate: LIVE_REFRESH_SECONDS },
   });
   if (!response.ok) throw new Error("OpenPhish request failed");
 
@@ -289,7 +360,7 @@ async function fetchOpenPhish(fetcher: Fetcher, now: number) {
     confidence: "medium" as const,
   }));
 
-  return makeDataset("OpenPhish", 6 * HOUR, new Date(now).toISOString(), iocs, {
+  return makeDataset("OpenPhish", LIVE_REFRESH_MS, new Date(now).toISOString(), iocs, {
     phishingActivity: iocs.length,
   });
 }
@@ -298,7 +369,7 @@ async function fetchThreatFox(fetcher: Fetcher, now: number) {
   const response = await fetcher("https://threatfox-api.abuse.ch/api/v1/", {
     method: "POST",
     body: new URLSearchParams({ query: "get_iocs", days: "1" }),
-    next: { revalidate: 6 * HOUR },
+    next: { revalidate: LIVE_REFRESH_SECONDS },
   });
   if (!response.ok) throw new Error("ThreatFox request failed");
 
@@ -341,9 +412,59 @@ async function fetchThreatFox(fetcher: Fetcher, now: number) {
 
   if (!iocs.length) throw new Error("ThreatFox response empty");
 
-  return makeDataset("ThreatFox", 6 * HOUR, new Date(now).toISOString(), iocs, {
+  return makeDataset("ThreatFox", LIVE_REFRESH_MS, new Date(now).toISOString(), iocs, {
     iocVolume: iocs.length,
     malwareSubmissions: iocs.filter((ioc) => ioc.malwareFamily).length,
+  });
+}
+
+async function fetchGreyNoise(fetcher: Fetcher, now: number) {
+  const apiKey = process.env.GREYNOISE_API_KEY;
+  if (!apiKey) throw new Error("GreyNoise API key not configured");
+
+  const query = encodeURIComponent("classification:malicious last_seen:1d");
+  const response = await fetcher(
+    `https://api.greynoise.io/v2/experimental/gnql?query=${query}&size=100`,
+    {
+      headers: {
+        Accept: "application/json",
+        key: apiKey,
+      },
+      next: { revalidate: LIVE_REFRESH_SECONDS },
+    },
+  );
+  if (!response.ok) throw new Error("GreyNoise request failed");
+
+  const payload = await response.json();
+  const rows = isObject(payload) && Array.isArray(payload.data) ? payload.data : null;
+  if (!rows) throw new Error("GreyNoise response malformed");
+
+  const iocs = rows
+    .map((entry: unknown): NormalizedIoc | null => {
+      if (!isObject(entry)) return null;
+      if (readString(entry.classification).toLowerCase() !== "malicious") return null;
+
+      const ip = readString(entry.ip);
+      if (!ip) return null;
+
+      const tags = readStringArray(entry.tags);
+      return {
+        type: "ip" as const,
+        value: ip,
+        source: "GreyNoise",
+        firstSeen: null,
+        lastSeen: readString(entry.last_seen) || null,
+        category: tags[0] || readString(entry.name) || "malicious-scanner",
+        confidence: "high" as const,
+      };
+    })
+    .filter((ioc): ioc is NormalizedIoc => Boolean(ioc));
+
+  if (!iocs.length) throw new Error("GreyNoise response empty");
+
+  return makeDataset("GreyNoise", LIVE_REFRESH_MS, new Date(now).toISOString(), iocs, {
+    iocVolume: iocs.length,
+    internetScanning: iocs.length,
   });
 }
 
@@ -372,12 +493,24 @@ async function fetchMock(now: number) {
 }
 
 export const SOURCE_ADAPTERS: SourceAdapter[] = [
-  { name: "CISA KEV", ttlMs: 6 * HOUR, configured: () => true, fetch: fetchCisaKev },
-  { name: "URLhaus", ttlMs: 6 * HOUR, configured: () => true, fetch: fetchUrlhaus },
-  { name: "MalwareBazaar", ttlMs: 6 * HOUR, configured: () => true, fetch: fetchMalwareBazaar },
-  { name: "SANS ISC DShield", ttlMs: 6 * HOUR, configured: () => true, fetch: fetchDshield },
-  { name: "OpenPhish", ttlMs: 6 * HOUR, configured: () => true, fetch: fetchOpenPhish },
-  { name: "ThreatFox", ttlMs: 6 * HOUR, configured: () => true, fetch: fetchThreatFox },
+  { name: "CISA KEV", ttlMs: LIVE_REFRESH_MS, configured: () => true, fetch: fetchCisaKev },
+  {
+    name: "VirusTotal",
+    ttlMs: LIVE_REFRESH_MS,
+    configured: () => Boolean(process.env.VIRUSTOTAL_API_KEY),
+    fetch: fetchVirusTotal,
+  },
+  { name: "URLhaus", ttlMs: LIVE_REFRESH_MS, configured: () => true, fetch: fetchUrlhaus },
+  { name: "MalwareBazaar", ttlMs: LIVE_REFRESH_MS, configured: () => true, fetch: fetchMalwareBazaar },
+  { name: "SANS ISC DShield", ttlMs: LIVE_REFRESH_MS, configured: () => true, fetch: fetchDshield },
+  { name: "OpenPhish", ttlMs: LIVE_REFRESH_MS, configured: () => true, fetch: fetchOpenPhish },
+  { name: "ThreatFox", ttlMs: LIVE_REFRESH_MS, configured: () => true, fetch: fetchThreatFox },
+  {
+    name: "GreyNoise",
+    ttlMs: LIVE_REFRESH_MS,
+    configured: () => Boolean(process.env.GREYNOISE_API_KEY),
+    fetch: fetchGreyNoise,
+  },
 ];
 
 async function runAdapter(adapter: SourceAdapter, fetcher: Fetcher, now: number): Promise<AdapterResult> {
@@ -386,6 +519,11 @@ async function runAdapter(adapter: SourceAdapter, fetcher: Fetcher, now: number)
       dataset: null,
       status: status(adapter.name, false, "none", "failed", null, 0, "Source is not configured"),
     };
+  }
+
+  const liveCached = cache.get(adapter.name);
+  if (liveCached && isDatasetFresh(liveCached, now) && datasetHasValidatedContent(liveCached)) {
+    return { dataset: liveCached, status: liveCached.status };
   }
 
   try {

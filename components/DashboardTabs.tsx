@@ -105,13 +105,13 @@ function DashboardHome() {
           MALSIGHT HOME
         </p>
         <h2 className="theme-title mt-2 text-3xl font-black text-[#243B32]">
-          A focused SOC dashboard for vulnerability and threat awareness
+          Your window into today's threat landscape.
         </h2>
         <p className="theme-muted mt-3 text-[#466357]">
-          MalSight brings exploited CVE tracking, breach reporting, public
-          attack telemetry, and impact-chain analysis into one compact defender
-          workspace. Use the navigation above to move between the current
-          intelligence views.
+          MalSight brings together exploited vulnerabilities, breach reports,
+          public attack telemetry, and cybersecurity trends into a single
+          workspace designed to help you explore and understand the current
+          threat landscape.
         </p>
       </div>
 

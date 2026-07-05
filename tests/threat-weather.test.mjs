@@ -215,3 +215,27 @@ test("development mock mode is explicit", async () => {
   assert.equal(result.mode, "mock");
   assert.ok(result.datasets.some((item) => item.source === "Local development mock"));
 });
+
+test("optional keyed sources are reported unconfigured without API keys", async () => {
+  sources.clearThreatWeatherCache();
+  const previousVirusTotalKey = process.env.VIRUSTOTAL_API_KEY;
+  const previousGreyNoiseKey = process.env.GREYNOISE_API_KEY;
+  delete process.env.VIRUSTOTAL_API_KEY;
+  delete process.env.GREYNOISE_API_KEY;
+
+  const failingFetch = async () => {
+    throw new Error("network disabled in test");
+  };
+  const result = await sources.fetchThreatWeatherDatasets(failingFetch, now);
+
+  if (previousVirusTotalKey) process.env.VIRUSTOTAL_API_KEY = previousVirusTotalKey;
+  if (previousGreyNoiseKey) process.env.GREYNOISE_API_KEY = previousGreyNoiseKey;
+
+  const virusTotal = result.statuses.find((item) => item.name === "VirusTotal");
+  const greyNoise = result.statuses.find((item) => item.name === "GreyNoise");
+
+  assert.equal(virusTotal.configured, false);
+  assert.equal(virusTotal.message, "Source is not configured");
+  assert.equal(greyNoise.configured, false);
+  assert.equal(greyNoise.message, "Source is not configured");
+});

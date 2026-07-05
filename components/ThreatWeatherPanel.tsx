@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 
 type IocType = "ip" | "domain" | "url" | "hash" | "email";
 
+const WEATHER_REFRESH_MS = 24 * 60 * 60 * 1000;
+
 type ThreatWeatherResponse = {
   updatedAt: string;
   mode: "live" | "cached" | "none" | "mock";
@@ -101,9 +103,29 @@ function totalIocs(totals: Record<IocType, number>) {
   return Object.values(totals).reduce((sum, value) => sum + value, 0);
 }
 
+function iocLabel(type: IocType) {
+  if (type === "ip") return "IPs";
+  if (type === "hash") return "hashes";
+  return `${type}s`;
+}
+
+function sourceModeLabel(mode: ThreatWeatherResponse["mode"]) {
+  if (mode === "none") return "unavailable";
+  if (mode === "mock") return "mock";
+  return mode;
+}
+
+function sourceModeClass(mode: ThreatWeatherResponse["mode"]) {
+  if (mode === "live") return "bg-[#3F6B5A] text-white";
+  if (mode === "cached") return "bg-[#D97706] text-white";
+  if (mode === "mock") return "bg-[#5B4B22] text-white";
+  return "bg-[#B3261E] text-white";
+}
+
 export default function ThreatWeatherPanel() {
   const [data, setData] = useState<ThreatWeatherResponse | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [sourceHealthOpen, setSourceHealthOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -123,9 +145,11 @@ export default function ThreatWeatherPanel() {
     }
 
     loadWeather();
+    const refreshTimer = window.setInterval(loadWeather, WEATHER_REFRESH_MS);
 
     return () => {
       cancelled = true;
+      window.clearInterval(refreshTimer);
     };
   }, []);
 
@@ -255,7 +279,7 @@ export default function ThreatWeatherPanel() {
                   {formatNumber(value)}
                 </p>
                 <p className="text-xs font-black uppercase tracking-[0.16em] text-[#466357]">
-                  {type === "ip" ? "IPs" : `${type}s`}
+                  {iocLabel(type)}
                 </p>
               </div>
             ),
@@ -290,6 +314,40 @@ export default function ThreatWeatherPanel() {
               </p>
             )}
           </div>
+        </div>
+
+        <div className="mt-5 rounded-xl border border-[#8DA99B]/45 bg-[#E6E4DE]/45 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm font-black text-[#243B32]">Source health</p>
+            <button
+              type="button"
+              onClick={() => setSourceHealthOpen((open) => !open)}
+              className="rounded-full border border-[#8DA99B]/55 bg-white/65 px-3 py-1.5 text-xs font-black text-[#243B32] transition hover:bg-white"
+            >
+              {sourceHealthOpen ? "Hide details" : "Show details"}
+            </button>
+          </div>
+          <p className="mt-2 text-xs font-bold text-[#466357]">{data.healthMessage}</p>
+          {sourceHealthOpen && (
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {data.sourceStatuses.map((source) => (
+                <div
+                  key={source.name}
+                  className="flex items-center justify-between gap-3 rounded-xl bg-white/55 p-3"
+                >
+                  <div>
+                    <p className="text-sm font-black text-[#243B32]">{source.name}</p>
+                    <p className="text-xs font-bold text-[#466357]">{source.message}</p>
+                  </div>
+                  <span
+                    className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-black uppercase ${sourceModeClass(source.mode)}`}
+                  >
+                    {source.configured ? sourceModeLabel(source.mode) : "not set"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="mt-5 grid gap-3">
