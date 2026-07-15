@@ -80,30 +80,6 @@ function readString(value: unknown) {
   return typeof value === "string" ? value : "";
 }
 
-function readStringArray(value: unknown) {
-  return Array.isArray(value) ? value.map(readString).filter(Boolean) : [];
-}
-
-function isMeaningfulMalwareName(value: string) {
-  return Boolean(value) && !/^(unknown|n\/a|none|generic|malware)$/i.test(value.trim());
-}
-
-function hasMaliciousTag(tags: string[]) {
-  return tags.some((tag) =>
-    /malware|trojan|ransom|botnet|stealer|loader|rat|backdoor|worm|banker|dropper|keylogger|phish|exploit/i.test(
-      tag,
-    ),
-  );
-}
-
-function isThreatFoxMalicious(entry: Record<string, unknown>) {
-  const confidence = Number(readString(entry.confidence_level) || entry.confidence_level || 0);
-  const threatType = readString(entry.threat_type);
-  const malware = readString(entry.malware_printable);
-
-  return confidence >= 50 && (isMeaningfulMalwareName(malware) || /malware|botnet|phish|c2|exploit/i.test(threatType));
-}
-
 function parseCsvLine(line: string) {
   const values: string[] = [];
   let current = "";
@@ -126,16 +102,6 @@ function parseCsvLine(line: string) {
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
-
-function readNumber(value: unknown) {
-  const number = Number(value);
-  return Number.isFinite(number) ? number : 0;
-}
-
-function readUnixTimestamp(value: unknown) {
-  const seconds = readNumber(value);
-  return seconds > 0 ? new Date(seconds * 1000).toISOString() : null;
 }
 
 async function fetchCisaKev(fetcher: Fetcher, now: number) {
@@ -176,68 +142,9 @@ async function fetchCisaKev(fetcher: Fetcher, now: number) {
   );
 }
 
-async function fetchVirusTotal(fetcher: Fetcher, now: number) {
-  const apiKey = process.env.VIRUSTOTAL_API_KEY;
-  if (!apiKey) throw new Error("VirusTotal API key not configured");
-
-  const query = encodeURIComponent("type:file positives:5 fs:1d");
-  const response = await fetcher(
-    `https://www.virustotal.com/api/v3/intelligence/search?query=${query}&limit=40`,
-    {
-      headers: { "x-apikey": apiKey },
-      next: { revalidate: LIVE_REFRESH_SECONDS },
-    },
-  );
-  if (!response.ok) throw new Error("VirusTotal request failed");
-
-  const payload = await response.json();
-  if (!isObject(payload) || !Array.isArray(payload.data)) {
-    throw new Error("VirusTotal response malformed");
-  }
-
-  const iocs = payload.data
-    .map((entry: unknown): NormalizedIoc | null => {
-      if (!isObject(entry) || !isObject(entry.attributes)) return null;
-
-      const attributes = entry.attributes;
-      const stats = isObject(attributes.last_analysis_stats)
-        ? attributes.last_analysis_stats
-        : {};
-      const malicious = readNumber(stats.malicious);
-      const suspicious = readNumber(stats.suspicious);
-      const sha256 = readString(attributes.sha256);
-
-      if (malicious < 5 || !sha256) return null;
-
-      const threatClassification = isObject(attributes.popular_threat_classification)
-        ? attributes.popular_threat_classification
-        : {};
-      const threatLabel = readString(threatClassification.suggested_threat_label);
-
-      return {
-        type: "hash" as const,
-        value: sha256,
-        source: "VirusTotal",
-        firstSeen: readUnixTimestamp(attributes.first_submission_date),
-        lastSeen: readUnixTimestamp(attributes.last_submission_date),
-        malwareFamily: isMeaningfulMalwareName(threatLabel) ? threatLabel : undefined,
-        category: readString(attributes.type_description) || "malware",
-        confidence: malicious >= 10 || suspicious >= 3 ? "high" : "medium",
-      };
-    })
-    .filter((ioc): ioc is NormalizedIoc => Boolean(ioc));
-
-  if (!iocs.length) throw new Error("VirusTotal response empty");
-
-  return makeDataset("VirusTotal", LIVE_REFRESH_MS, new Date(now).toISOString(), iocs, {
-    iocVolume: iocs.length,
-    malwareSubmissions: iocs.length,
-  });
-}
-
 async function fetchUrlhaus(fetcher: Fetcher, now: number) {
   const response = await fetcher("https://urlhaus.abuse.ch/downloads/text/", {
-    next: { revalidate: LIVE_REFRESH_SECONDS },
+    cache: "no-store",
   });
   if (!response.ok) throw new Error("URLhaus request failed");
 
@@ -264,46 +171,151 @@ async function fetchUrlhaus(fetcher: Fetcher, now: number) {
   });
 }
 
-async function fetchMalwareBazaar(fetcher: Fetcher, now: number) {
-  const response = await fetcher("https://mb-api.abuse.ch/api/v1/", {
-    method: "POST",
-    body: new URLSearchParams({ query: "get_recent", selector: "100" }),
-    next: { revalidate: LIVE_REFRESH_SECONDS },
+async function fetchUrlhausDomains(fetcher: Fetcher, now: number) {
+  const response = await fetcher("https://urlhaus.abuse.ch/downloads/hostfile/", {
+    cache: "no-store",
   });
-  if (!response.ok) throw new Error("MalwareBazaar request failed");
+  if (!response.ok) throw new Error("URLhaus domains request failed");
 
-  const payload = await response.json();
-  if (!isObject(payload) || payload.query_status !== "ok" || !Array.isArray(payload.data)) {
-    throw new Error("MalwareBazaar response malformed");
-  }
+  const text = await response.text();
+  const rows = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith("#"));
 
-  const iocs = payload.data
-    .map((entry: unknown): NormalizedIoc | null => {
-      if (!isObject(entry)) return null;
-      const malwareFamily = readString(entry.signature);
-      const tags = readStringArray(entry.tags);
+  if (!rows.length) throw new Error("URLhaus domains response empty");
 
-      if (!isMeaningfulMalwareName(malwareFamily) && !hasMaliciousTag(tags)) {
-        return null;
-      }
+  const iocs = rows
+    .map((line): NormalizedIoc | null => {
+      const [, domain] = line.split(/\s+/);
+      if (!domain) return null;
+
+      return {
+        type: "domain" as const,
+        value: domain,
+        source: "URLhaus Domains",
+        firstSeen: null,
+        lastSeen: null,
+        category: "malicious-domain",
+        confidence: "medium" as const,
+      };
+    })
+    .filter((ioc): ioc is NormalizedIoc => Boolean(ioc));
+
+  if (!iocs.length) throw new Error("URLhaus domains response empty");
+
+  return makeDataset("URLhaus Domains", LIVE_REFRESH_MS, new Date(now).toISOString(), iocs, {
+    iocVolume: iocs.length,
+  });
+}
+
+async function fetchMalwareBazaarRecent(fetcher: Fetcher, now: number) {
+  const response = await fetcher("https://bazaar.abuse.ch/export/csv/recent/", {
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error("MalwareBazaar Recent request failed");
+
+  const text = await response.text();
+  const rows = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith("#"));
+
+  if (!rows.length) throw new Error("MalwareBazaar Recent response empty");
+
+  const cutoff = now - DAY;
+  const iocs = rows
+    .map((line): NormalizedIoc | null => {
+      const values = parseCsvLine(line);
+      const firstSeen = values[0];
+      const sha256 = values[1];
+      const fileType = values[6];
+      const signature = values[8];
+      const firstSeenAt = Date.parse(`${firstSeen} UTC`);
+
+      if (!Number.isFinite(firstSeenAt) || firstSeenAt < cutoff) return null;
+      if (!sha256) return null;
 
       return {
         type: "hash" as const,
-        value: readString(entry.sha256_hash),
-        source: "MalwareBazaar",
-        firstSeen: readString(entry.first_seen) || null,
-        lastSeen: readString(entry.last_seen) || null,
-        malwareFamily: isMeaningfulMalwareName(malwareFamily) ? malwareFamily : undefined,
-        category: readString(entry.file_type) || "malware",
+        value: sha256,
+        source: "MalwareBazaar Recent",
+        firstSeen: firstSeen || null,
+        lastSeen: firstSeen || null,
+        malwareFamily: signature && signature !== "n/a" ? signature : undefined,
+        category: fileType || "malware-sample",
         confidence: "high" as const,
       };
     })
     .filter((ioc): ioc is NormalizedIoc => Boolean(ioc));
 
-  if (!iocs.length) throw new Error("MalwareBazaar response empty");
+  if (!iocs.length) {
+    return makeDataset("MalwareBazaar Recent", LIVE_REFRESH_MS, new Date(now).toISOString(), [], {});
+  }
 
-  return makeDataset("MalwareBazaar", LIVE_REFRESH_MS, new Date(now).toISOString(), iocs, {
+  return makeDataset("MalwareBazaar Recent", LIVE_REFRESH_MS, new Date(now).toISOString(), iocs, {
+    iocVolume: iocs.length,
     malwareSubmissions: iocs.length,
+  });
+}
+
+async function fetchEmergingThreatsCompromisedIps(fetcher: Fetcher, now: number) {
+  const response = await fetcher("https://rules.emergingthreats.net/blockrules/compromised-ips.txt", {
+    next: { revalidate: LIVE_REFRESH_SECONDS },
+  });
+  if (!response.ok) throw new Error("Emerging Threats request failed");
+
+  const text = await response.text();
+  const rows = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith("#"));
+
+  if (!rows.length) throw new Error("Emerging Threats response empty");
+
+  const iocs = rows.map((ip) => ({
+    type: "ip" as const,
+    value: ip,
+    source: "Emerging Threats",
+    firstSeen: null,
+    lastSeen: null,
+    category: "compromised-ip",
+    confidence: "high" as const,
+  }));
+
+  return makeDataset("Emerging Threats", LIVE_REFRESH_MS, new Date(now).toISOString(), iocs, {
+    iocVolume: iocs.length,
+    internetScanning: iocs.length,
+  });
+}
+
+async function fetchBlocklistDe(fetcher: Fetcher, now: number) {
+  const response = await fetcher("https://lists.blocklist.de/lists/all.txt", {
+    next: { revalidate: LIVE_REFRESH_SECONDS },
+  });
+  if (!response.ok) throw new Error("blocklist.de request failed");
+
+  const text = await response.text();
+  const rows = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith("#"));
+
+  if (!rows.length) throw new Error("blocklist.de response empty");
+
+  const iocs = rows.map((ip) => ({
+    type: "ip" as const,
+    value: ip,
+    source: "blocklist.de",
+    firstSeen: null,
+    lastSeen: null,
+    category: "abusive-ip",
+    confidence: "medium" as const,
+  }));
+
+  return makeDataset("blocklist.de", LIVE_REFRESH_MS, new Date(now).toISOString(), iocs, {
+    iocVolume: iocs.length,
+    internetScanning: iocs.length,
   });
 }
 
@@ -336,6 +348,56 @@ async function fetchDshield(fetcher: Fetcher, now: number) {
   });
 }
 
+async function fetchPhishTank(fetcher: Fetcher, now: number) {
+  const response = await fetcher("http://data.phishtank.com/data/online-valid.csv", {
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error("PhishTank request failed");
+
+  const text = await response.text();
+  const rows = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (rows.length <= 1) throw new Error("PhishTank response empty");
+
+  const [, ...dataRows] = rows;
+  const cutoff = now - DAY;
+  const iocs = dataRows
+    .map((line): NormalizedIoc | null => {
+      const values = parseCsvLine(line);
+      const url = values[1];
+      const submissionTime = values[3];
+      const verified = values[4];
+      const verificationTime = values[5];
+      const online = values[6];
+      const target = values[7];
+      const submittedAt = Date.parse(submissionTime);
+
+      if (verified !== "yes" || online !== "yes") return null;
+      if (!Number.isFinite(submittedAt) || submittedAt < cutoff) return null;
+
+      return {
+        type: "url" as const,
+        value: url,
+        source: "PhishTank",
+        firstSeen: submissionTime || null,
+        lastSeen: verificationTime || null,
+        category: target ? `phishing:${target}` : "phishing",
+        confidence: "high" as const,
+      };
+    })
+    .filter((ioc): ioc is NormalizedIoc => Boolean(ioc));
+
+  if (!iocs.length) throw new Error("PhishTank response empty");
+
+  return makeDataset("PhishTank", LIVE_REFRESH_MS, new Date(now).toISOString(), iocs, {
+    iocVolume: iocs.length,
+    phishingActivity: iocs.length,
+  });
+}
+
 async function fetchOpenPhish(fetcher: Fetcher, now: number) {
   const response = await fetcher("https://openphish.com/feed.txt", {
     next: { revalidate: LIVE_REFRESH_SECONDS },
@@ -365,109 +427,6 @@ async function fetchOpenPhish(fetcher: Fetcher, now: number) {
   });
 }
 
-async function fetchThreatFox(fetcher: Fetcher, now: number) {
-  const response = await fetcher("https://threatfox-api.abuse.ch/api/v1/", {
-    method: "POST",
-    body: new URLSearchParams({ query: "get_iocs", days: "1" }),
-    next: { revalidate: LIVE_REFRESH_SECONDS },
-  });
-  if (!response.ok) throw new Error("ThreatFox request failed");
-
-  const payload = await response.json();
-  if (!isObject(payload) || payload.query_status !== "ok" || !Array.isArray(payload.data)) {
-    throw new Error("ThreatFox response malformed");
-  }
-
-  const iocs = payload.data
-    .map((entry: unknown): NormalizedIoc | null => {
-      if (!isObject(entry)) return null;
-      if (!isThreatFoxMalicious(entry)) return null;
-
-      const type = readString(entry.ioc_type).toLowerCase();
-      const mappedType =
-        type === "ip:port" || type === "ip"
-          ? "ip"
-          : type === "domain"
-            ? "domain"
-            : type === "url"
-              ? "url"
-              : type.includes("hash")
-                ? "hash"
-                : null;
-      const rawValue = readString(entry.ioc).split(":")[0];
-      if (!mappedType) return null;
-
-      return {
-        type: mappedType,
-        value: rawValue,
-        source: "ThreatFox",
-        firstSeen: readString(entry.first_seen) || null,
-        lastSeen: readString(entry.last_seen) || null,
-        malwareFamily: readString(entry.malware_printable) || undefined,
-        category: readString(entry.threat_type) || "threat-ioc",
-        confidence: "high" as const,
-      };
-    })
-    .filter((ioc): ioc is NormalizedIoc => Boolean(ioc));
-
-  if (!iocs.length) throw new Error("ThreatFox response empty");
-
-  return makeDataset("ThreatFox", LIVE_REFRESH_MS, new Date(now).toISOString(), iocs, {
-    iocVolume: iocs.length,
-    malwareSubmissions: iocs.filter((ioc) => ioc.malwareFamily).length,
-  });
-}
-
-async function fetchGreyNoise(fetcher: Fetcher, now: number) {
-  const apiKey = process.env.GREYNOISE_API_KEY;
-  if (!apiKey) throw new Error("GreyNoise API key not configured");
-
-  const query = encodeURIComponent("classification:malicious last_seen:1d");
-  const response = await fetcher(
-    `https://api.greynoise.io/v2/experimental/gnql?query=${query}&size=100`,
-    {
-      headers: {
-        Accept: "application/json",
-        key: apiKey,
-      },
-      next: { revalidate: LIVE_REFRESH_SECONDS },
-    },
-  );
-  if (!response.ok) throw new Error("GreyNoise request failed");
-
-  const payload = await response.json();
-  const rows = isObject(payload) && Array.isArray(payload.data) ? payload.data : null;
-  if (!rows) throw new Error("GreyNoise response malformed");
-
-  const iocs = rows
-    .map((entry: unknown): NormalizedIoc | null => {
-      if (!isObject(entry)) return null;
-      if (readString(entry.classification).toLowerCase() !== "malicious") return null;
-
-      const ip = readString(entry.ip);
-      if (!ip) return null;
-
-      const tags = readStringArray(entry.tags);
-      return {
-        type: "ip" as const,
-        value: ip,
-        source: "GreyNoise",
-        firstSeen: null,
-        lastSeen: readString(entry.last_seen) || null,
-        category: tags[0] || readString(entry.name) || "malicious-scanner",
-        confidence: "high" as const,
-      };
-    })
-    .filter((ioc): ioc is NormalizedIoc => Boolean(ioc));
-
-  if (!iocs.length) throw new Error("GreyNoise response empty");
-
-  return makeDataset("GreyNoise", LIVE_REFRESH_MS, new Date(now).toISOString(), iocs, {
-    iocVolume: iocs.length,
-    internetScanning: iocs.length,
-  });
-}
-
 async function fetchMock(now: number) {
   if (process.env.NODE_ENV === "production" || process.env.MALSIGHT_USE_MOCK_THREAT_WEATHER !== "true") {
     throw new Error("Mock mode disabled");
@@ -494,23 +453,24 @@ async function fetchMock(now: number) {
 
 export const SOURCE_ADAPTERS: SourceAdapter[] = [
   { name: "CISA KEV", ttlMs: LIVE_REFRESH_MS, configured: () => true, fetch: fetchCisaKev },
-  {
-    name: "VirusTotal",
-    ttlMs: LIVE_REFRESH_MS,
-    configured: () => Boolean(process.env.VIRUSTOTAL_API_KEY),
-    fetch: fetchVirusTotal,
-  },
   { name: "URLhaus", ttlMs: LIVE_REFRESH_MS, configured: () => true, fetch: fetchUrlhaus },
-  { name: "MalwareBazaar", ttlMs: LIVE_REFRESH_MS, configured: () => true, fetch: fetchMalwareBazaar },
-  { name: "SANS ISC DShield", ttlMs: LIVE_REFRESH_MS, configured: () => true, fetch: fetchDshield },
-  { name: "OpenPhish", ttlMs: LIVE_REFRESH_MS, configured: () => true, fetch: fetchOpenPhish },
-  { name: "ThreatFox", ttlMs: LIVE_REFRESH_MS, configured: () => true, fetch: fetchThreatFox },
+  { name: "URLhaus Domains", ttlMs: LIVE_REFRESH_MS, configured: () => true, fetch: fetchUrlhausDomains },
   {
-    name: "GreyNoise",
+    name: "MalwareBazaar Recent",
     ttlMs: LIVE_REFRESH_MS,
-    configured: () => Boolean(process.env.GREYNOISE_API_KEY),
-    fetch: fetchGreyNoise,
+    configured: () => true,
+    fetch: fetchMalwareBazaarRecent,
   },
+  {
+    name: "Emerging Threats",
+    ttlMs: LIVE_REFRESH_MS,
+    configured: () => true,
+    fetch: fetchEmergingThreatsCompromisedIps,
+  },
+  { name: "blocklist.de", ttlMs: LIVE_REFRESH_MS, configured: () => true, fetch: fetchBlocklistDe },
+  { name: "SANS ISC DShield", ttlMs: LIVE_REFRESH_MS, configured: () => true, fetch: fetchDshield },
+  { name: "PhishTank", ttlMs: LIVE_REFRESH_MS, configured: () => true, fetch: fetchPhishTank },
+  { name: "OpenPhish", ttlMs: LIVE_REFRESH_MS, configured: () => true, fetch: fetchOpenPhish },
 ];
 
 async function runAdapter(adapter: SourceAdapter, fetcher: Fetcher, now: number): Promise<AdapterResult> {
@@ -534,7 +494,17 @@ async function runAdapter(adapter: SourceAdapter, fetcher: Fetcher, now: number)
     }
 
     if (!datasetHasValidatedContent(dataset)) {
-      throw new Error("Dataset has no validated content");
+      const emptyStatus = status(
+        adapter.name,
+        true,
+        "live",
+        "empty",
+        dataset.retrievedAt,
+        0,
+        "Live source returned no current validated IOCs",
+      );
+
+      return { dataset: null, status: emptyStatus };
     }
 
     cache.set(adapter.name, dataset);
@@ -594,7 +564,7 @@ export async function fetchThreatWeatherDatasets(fetcher: Fetcher = fetch, now =
   return {
     datasets: settled.flatMap((result) => (result.dataset ? [result.dataset] : [])),
     statuses: settled.map((result) => result.status),
-    totalConfiguredSources: adapters.filter((adapter) => adapter.configured()).length,
+    totalConfiguredSources: adapters.length,
     mode:
       process.env.MALSIGHT_USE_MOCK_THREAT_WEATHER === "true" && process.env.NODE_ENV !== "production"
         ? ("mock" as const)

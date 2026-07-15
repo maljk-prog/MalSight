@@ -1,13 +1,8 @@
 "use client";
 
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type MouseEvent as ReactMouseEvent,
-  type PointerEvent as ReactPointerEvent,
-} from "react";
+import { useEffect, useMemo, useState } from "react";
+import IpAbuseLookup from "./IpAbuseLookup";
+import ThreatGlobe from "./ThreatGlobe";
 
 type CountrySummary = {
   country: string;
@@ -84,70 +79,14 @@ const TIMEFRAMES = [
   { id: "30d", label: "30 days", title: "Last 30 days" },
 ];
 
-function project(longitude: number, latitude: number) {
-  return {
-    x: ((longitude + 180) / 360) * 1000,
-    y: ((83 - latitude) / 166) * 520,
-  };
-}
-
-function polygonToPath(rings: number[][][]) {
-  return rings
-    .map((ring) =>
-      ring
-        .map(([longitude, latitude], index) => {
-          const point = project(longitude, latitude);
-          return `${index === 0 ? "M" : "L"}${point.x.toFixed(2)} ${point.y.toFixed(2)}`;
-        })
-        .join(" ")
-        .concat(" Z"),
-    )
-    .join(" ");
-}
-
-function featureToPath(feature: GeoJsonFeature) {
-  if (!feature.geometry) return "";
-
-  if (feature.geometry.type === "Polygon") {
-    return polygonToPath(feature.geometry.coordinates as number[][][]);
-  }
-
-  return (feature.geometry.coordinates as number[][][][])
-    .map((polygon) => polygonToPath(polygon))
-    .join(" ");
-}
-
 function formatNumber(value: number) {
   return new Intl.NumberFormat("en").format(value);
-}
-
-function clampMapCenter(center: { x: number; y: number }, zoom: number) {
-  const viewWidth = 1000 / zoom;
-  const viewHeight = 520 / zoom;
-
-  if (viewWidth >= 1000 || viewHeight >= 520) {
-    return { x: 500, y: 260 };
-  }
-
-  return {
-    x: Math.max(viewWidth / 2, Math.min(1000 - viewWidth / 2, center.x)),
-    y: Math.max(viewHeight / 2, Math.min(520 - viewHeight / 2, center.y)),
-  };
 }
 
 export default function ThreatMap() {
   const [data, setData] = useState<ThreatMapResponse | null>(null);
   const [mapFeatures, setMapFeatures] = useState<GeoJsonFeature[]>([]);
   const [timeframe, setTimeframe] = useState("3d");
-  const [zoom, setZoom] = useState(1);
-  const [center, setCenter] = useState({ x: 500, y: 260 });
-  const svgRef = useRef<SVGSVGElement | null>(null);
-  const dragRef = useRef<{
-    pointerId: number;
-    startX: number;
-    startY: number;
-    center: { x: number; y: number };
-  } | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">(
     "loading",
   );
@@ -182,15 +121,6 @@ export default function ThreatMap() {
   const topAsn = asns[0];
   const activeTimeframe =
     TIMEFRAMES.find((item) => item.id === timeframe) || TIMEFRAMES[1];
-  const maxAttacks = Math.max(...countries.map((country) => country.attacks), 1);
-  const maxSourceAttacks = Math.max(
-    ...sources.map((source) => source.attacks),
-    1,
-  );
-  const viewWidth = 1000 / zoom;
-  const viewHeight = 520 / zoom;
-  const clampedCenter = clampMapCenter(center, zoom);
-  const viewBox = `${clampedCenter.x - viewWidth / 2} ${clampedCenter.y - viewHeight / 2} ${viewWidth} ${viewHeight}`;
   const totals = useMemo(
     () => ({
       attacks: countries.reduce((sum, country) => sum + country.attacks, 0),
@@ -199,65 +129,6 @@ export default function ThreatMap() {
     }),
     [countries, sources],
   );
-  const handleMapPointerDown = (event: ReactPointerEvent<SVGSVGElement>) => {
-    if (zoom <= 1) return;
-
-    dragRef.current = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      center: clampedCenter,
-    };
-    event.currentTarget.setPointerCapture(event.pointerId);
-  };
-  const handleMapPointerMove = (event: ReactPointerEvent<SVGSVGElement>) => {
-    const drag = dragRef.current;
-    const svg = svgRef.current;
-
-    if (!drag || !svg || drag.pointerId !== event.pointerId) return;
-
-    const bounds = svg.getBoundingClientRect();
-    const dx = ((event.clientX - drag.startX) / bounds.width) * viewWidth;
-    const dy = ((event.clientY - drag.startY) / bounds.height) * viewHeight;
-
-    setCenter(
-      clampMapCenter({ x: drag.center.x - dx, y: drag.center.y - dy }, zoom),
-    );
-  };
-  const stopMapDrag = (event: ReactPointerEvent<SVGSVGElement>) => {
-    if (dragRef.current?.pointerId === event.pointerId) {
-      dragRef.current = null;
-    }
-  };
-  const pointFromMapEvent = (event: ReactMouseEvent<SVGSVGElement>) => {
-    const svg = svgRef.current;
-
-    if (!svg) return clampedCenter;
-
-    const bounds = svg.getBoundingClientRect();
-
-    return {
-      x:
-        clampedCenter.x -
-        viewWidth / 2 +
-        ((event.clientX - bounds.left) / bounds.width) * viewWidth,
-      y:
-        clampedCenter.y -
-        viewHeight / 2 +
-        ((event.clientY - bounds.top) / bounds.height) * viewHeight,
-    };
-  };
-  const handleMapDoubleClick = (event: ReactMouseEvent<SVGSVGElement>) => {
-    event.preventDefault();
-
-    const nextZoom = Math.min(4, Math.max(2.25, zoom + 1));
-    const nextCenter = pointFromMapEvent(event);
-
-    dragRef.current = null;
-    setZoom(nextZoom);
-    setCenter(clampMapCenter(nextCenter, nextZoom));
-  };
-
   return (
     <div>
       <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
@@ -331,160 +202,17 @@ export default function ThreatMap() {
 
         {status === "ready" && (
           <>
-            <div className="relative overflow-hidden rounded-2xl bg-[#13231D]">
-              <div className="absolute right-4 top-4 z-10 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setZoom((current) => Math.min(4, current + 0.75))}
-                  className="rounded-xl border border-[#C8DDD2]/40 bg-[#13231D]/80 px-3 py-2 text-sm font-black text-[#F5F4EF] backdrop-blur"
-                >
-                  +
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setZoom((current) => Math.max(1, current - 0.75))}
-                  className="rounded-xl border border-[#C8DDD2]/40 bg-[#13231D]/80 px-3 py-2 text-sm font-black text-[#F5F4EF] backdrop-blur"
-                >
-                  -
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setZoom(1);
-                    setCenter({ x: 500, y: 260 });
-                  }}
-                  className="rounded-xl border border-[#C8DDD2]/40 bg-[#13231D]/80 px-3 py-2 text-sm font-bold text-[#F5F4EF] backdrop-blur"
-                >
-                  Reset
-                </button>
-              </div>
-              <svg
-                ref={svgRef}
-                viewBox={viewBox}
-                role="img"
-                aria-label="World heatmap of public attack source telemetry"
-                className={`h-[520px] w-full touch-none select-none ${
-                  zoom > 1 ? "cursor-grab active:cursor-grabbing" : "cursor-default"
-                }`}
-                onPointerDown={handleMapPointerDown}
-                onPointerMove={handleMapPointerMove}
-                onPointerUp={stopMapDrag}
-                onPointerCancel={stopMapDrag}
-                onPointerLeave={stopMapDrag}
-                onDoubleClick={handleMapDoubleClick}
-              >
-                <defs>
-                  <filter id="heat-blur" x="-40%" y="-40%" width="180%" height="180%">
-                    <feGaussianBlur stdDeviation="18" />
-                  </filter>
-                  <filter id="source-heat-blur" x="-80%" y="-80%" width="260%" height="260%">
-                    <feGaussianBlur stdDeviation="15" />
-                  </filter>
-                  <radialGradient id="heat-core">
-                    <stop offset="0%" stopColor="color-mix(in srgb, var(--theme-light) 76%, white)" stopOpacity="1" />
-                    <stop offset="42%" stopColor="color-mix(in srgb, var(--theme-warm) 88%, white)" stopOpacity="0.92" />
-                    <stop offset="100%" stopColor="var(--theme-accent)" stopOpacity="0" />
-                  </radialGradient>
-                  <radialGradient id="source-heat-core">
-                    <stop offset="0%" stopColor="white" stopOpacity="0.96" />
-                    <stop offset="18%" stopColor="color-mix(in srgb, var(--theme-light) 72%, white)" stopOpacity="0.9" />
-                    <stop offset="46%" stopColor="color-mix(in srgb, var(--theme-warm) 76%, white)" stopOpacity="0.66" />
-                    <stop offset="76%" stopColor="color-mix(in srgb, var(--theme-accent) 64%, var(--theme-warm))" stopOpacity="0.26" />
-                    <stop offset="100%" stopColor="var(--theme-accent)" stopOpacity="0" />
-                  </radialGradient>
-                </defs>
-
-                <rect width="1000" height="520" fill="var(--theme-deep-panel)" />
-                {[100, 200, 300, 400, 500, 600, 700, 800, 900].map((x) => (
-                  <line
-                    key={`x-${x}`}
-                    x1={x}
-                    x2={x}
-                    y1="0"
-                    y2="520"
-                    stroke="var(--theme-border)"
-                    strokeOpacity="0.12"
-                  />
-                ))}
-                {[80, 160, 240, 320, 400, 480].map((y) => (
-                  <line
-                    key={`y-${y}`}
-                    x1="0"
-                    x2="1000"
-                    y1={y}
-                    y2={y}
-                    stroke="var(--theme-border)"
-                    strokeOpacity="0.12"
-                  />
-                ))}
-
-                <g>
-                  {mapFeatures.map((feature, index) => (
-                    <path
-                      key={`${feature.id || feature.properties?.name || "country"}-${index}`}
-                      d={featureToPath(feature)}
-                      fill="var(--theme-overlay)"
-                      fillOpacity="0.42"
-                      stroke="var(--theme-deep-muted)"
-                      strokeOpacity="0.32"
-                      strokeWidth="0.7"
-                    />
-                  ))}
-                </g>
-
-                <g filter="url(#heat-blur)" opacity="0.94">
-                  {countries.map((country) => {
-                    const point = project(country.longitude, country.latitude);
-                    const intensity = Math.sqrt(country.attacks / maxAttacks);
-                    const radius = 24 + intensity * 82;
-
-                    return (
-                      <circle
-                        key={`glow-${country.countryCode}`}
-                        cx={point.x}
-                        cy={point.y}
-                        r={radius}
-                        fill="url(#heat-core)"
-                        opacity={0.24 + intensity * 0.38}
-                        pointerEvents="none"
-                      />
-                    );
-                  })}
-                </g>
-
-                <g filter="url(#source-heat-blur)" opacity="0.92" style={{ mixBlendMode: "screen" }}>
-                  {sources.map((source) => {
-                    const point = project(source.longitude, source.latitude);
-                    const intensity = Math.sqrt(source.attacks / maxSourceAttacks);
-                    const radius = 14 + intensity * (zoom > 1 ? 38 : 28);
-
-                    return (
-                      <circle
-                        key={`source-heat-${source.ip}`}
-                        cx={point.x}
-                        cy={point.y}
-                        r={radius}
-                        fill="url(#source-heat-core)"
-                        opacity={0.34 + intensity * 0.34}
-                        pointerEvents="none"
-                      />
-                    );
-                  })}
-                </g>
-
-              </svg>
-
-              {mapFeatures.length === 0 && (
-                <div className="absolute inset-0 flex items-center justify-center bg-[#13231D]/75 text-sm font-bold text-[#C8DDD2]">
-                  Loading world atlas...
-                </div>
-              )}
-            </div>
+            <ThreatGlobe
+              features={mapFeatures}
+              sources={sources}
+              countries={countries}
+            />
 
             <p className="mt-3 text-sm font-semibold text-[#466357]">
-              Double-click a heat region to zoom in, then drag the map to
-              follow denser source areas. Color shows relative source-IP
-              concentration without count markers.
+              Drag to rotate the earth and scroll to zoom. Hotspots and moving
+              pulses are derived from the same enriched DShield source IPs
+              listed below. Pulses show observed source activity, not invented
+              source-to-destination routes.
             </p>
 
             <div className="mt-4 rounded-xl border border-[#D6C89B]/60 bg-[#FFF3B0]/20 p-3 text-xs font-semibold leading-relaxed text-[#5B4B22]">
@@ -511,6 +239,8 @@ export default function ThreatMap() {
 
       {status === "ready" && (
         <>
+          <IpAbuseLookup />
+
           <div className="mt-6 rounded-2xl border border-[#8DA99B]/50 bg-white/50 p-4">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div>
@@ -522,12 +252,14 @@ export default function ThreatMap() {
                     ? topAsn.asn
                       ? `AS${topAsn.asn}`
                       : "Unknown ASN"
-                    : "No ASN data available"}
+                    : "ASN enrichment unavailable"}
                 </h3>
                 <p className="mt-1 max-w-3xl text-sm font-semibold text-[#466357]">
                   {topAsn
                     ? topAsn.organization
-                    : "Public telemetry did not return enriched ASN data for this timeframe."}
+                    : sources.length > 0
+                      ? "GeoIP enrichment returned source locations, but no usable network ownership data for this timeframe."
+                      : "No source-IP telemetry is available for this timeframe."}
                 </p>
               </div>
 
@@ -621,14 +353,9 @@ export default function ThreatMap() {
                 <div key={source.ip} className="rounded-xl bg-[#E6E4DE] p-4">
                   <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                     <div>
-                      <a
-                        href={`https://isc.sans.edu/ipinfo/${source.ip}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-black text-[#3F6B5A] underline"
-                      >
+                      <span className="font-mono font-black text-[#3F6B5A]">
                         {source.ip}
-                      </a>
+                      </span>
                       <p className="mt-1 text-sm font-semibold text-[#466357]">
                         {source.city}, {source.country}
                       </p>

@@ -51,6 +51,17 @@ type CountrySummary = {
   longitude: number;
 };
 
+type AsnSummary = {
+  asn: number | null;
+  organization: string;
+  attacks: number;
+  reports: number;
+  ipCount: number;
+  countryCount: number;
+  countries: string[];
+  daysSeen: number;
+};
+
 type AggregatedSource = DShieldSource & {
   attacks: number;
   count: number;
@@ -88,22 +99,19 @@ async function fetchDShieldSourcesForDate(date: string) {
   return Array.isArray(data) ? data : data.value || [];
 }
 
-async function fetchDShieldSources() {
-  const populatedDays: { date: string; sources: DShieldSource[] }[] = [];
-
-  for (const date of Array.from({ length: 7 }, (_, index) =>
+async function fetchDShieldSources(requestedDays: number) {
+  const dates = Array.from({ length: requestedDays }, (_, index) =>
     dateDaysAgo(index),
-  )) {
-    const sources = await fetchDShieldSourcesForDate(date);
-
-    if (sources.length > 0) {
-      populatedDays.push({ date, sources });
-    }
-
-    if (populatedDays.length === 3) {
-      break;
-    }
-  }
+  );
+  const settled = await Promise.allSettled(
+    dates.map(async (date) => ({
+      date,
+      sources: await fetchDShieldSourcesForDate(date),
+    })),
+  );
+  const populatedDays = settled
+    .flatMap((result) => (result.status === "fulfilled" ? [result.value] : []))
+    .filter((day) => day.sources.length > 0);
 
   return {
     dates: populatedDays.map((day) => day.date),
@@ -211,8 +219,47 @@ function aggregateCountries(sources: EnrichedSource[]) {
     .sort((a, b) => b.attacks - a.attacks);
 }
 
-export async function GET() {
-  const { dates, sources } = await fetchDShieldSources();
+function aggregateAsns(sources: EnrichedSource[]) {
+  const asns = new Map<string, AsnSummary>();
+
+  sources.forEach((source) => {
+    const key = source.asn ? `AS${source.asn}` : source.organization;
+    const current =
+      asns.get(key) ||
+      ({
+        asn: source.asn,
+        organization: source.organization || "Unknown organization",
+        attacks: 0,
+        reports: 0,
+        ipCount: 0,
+        countryCount: 0,
+        countries: [],
+        daysSeen: 0,
+      } satisfies AsnSummary);
+
+    current.attacks += source.attacks;
+    current.reports += source.reports;
+    current.ipCount += 1;
+    current.daysSeen += source.daysSeen;
+
+    if (!current.countries.includes(source.country)) {
+      current.countries.push(source.country);
+      current.countryCount = current.countries.length;
+    }
+
+    asns.set(key, current);
+  });
+
+  return Array.from(asns.values()).sort((a, b) => b.attacks - a.attacks);
+}
+
+export async function GET(request: Request) {
+  const timeframe = new URL(request.url).searchParams.get("timeframe") || "3d";
+  const requestedDays =
+    ({ "24h": 1, "3d": 3, "7d": 7, "30d": 30 } as Record<string, number>)[
+      timeframe
+    ] || 3;
+  const { dates, sources } = await fetchDShieldSources(requestedDays);
   const enriched = (
     await Promise.all(sources.slice(0, 100).map((source) => geolocateSource(source)))
   )
@@ -222,6 +269,7 @@ export async function GET() {
 
   return Response.json({
     updatedAt: new Date().toISOString(),
+    requestedDays,
     source:
       "SANS Internet Storm Center / DShield top source IP telemetry enriched with GeoIP coordinates",
     sourceUrl: "https://isc.sans.edu/api/",
@@ -233,6 +281,7 @@ export async function GET() {
     geoIpSource: "ipwho.is",
     warning:
       "DShield source-IP summaries are public telemetry and may include false positives. Do not use this as a blocklist.",
+    asns: aggregateAsns(topSources),
     countries: aggregateCountries(topSources),
     sources: topSources,
   });

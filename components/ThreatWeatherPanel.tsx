@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 type IocType = "ip" | "domain" | "url" | "hash" | "email";
+const VISIBLE_IOC_TYPES: IocType[] = ["ip", "domain", "url", "hash"];
 
 const WEATHER_REFRESH_MS = 24 * 60 * 60 * 1000;
 
@@ -271,12 +272,12 @@ export default function ThreatWeatherPanel() {
           </span>
         </div>
 
-        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-5">
-          {(Object.entries(data.iocCollector.totals) as [IocType, number][]).map(
-            ([type, value]) => (
+        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {VISIBLE_IOC_TYPES.map(
+            (type) => (
               <div key={type} className="rounded-xl bg-[#E6E4DE]/75 p-3">
                 <p className="text-2xl font-black text-[#243B32]">
-                  {formatNumber(value)}
+                  {formatNumber(data.iocCollector.totals[type] || 0)}
                 </p>
                 <p className="text-xs font-black uppercase tracking-[0.16em] text-[#466357]">
                   {iocLabel(type)}
@@ -372,7 +373,7 @@ export default function ThreatWeatherPanel() {
           <span className="font-black text-[#243B32]">
             {data.iocCollector.deltas.available
               ? "Compared to prior validated collection"
-              : data.iocCollector.deltas.message}
+              : "Current live 24-hour window; prior-day comparison needs persisted history"}
           </span>
         </p>
       </article>

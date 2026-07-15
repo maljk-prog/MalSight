@@ -30,6 +30,14 @@ function sortByLatest(a: KevVulnerability, b: KevVulnerability) {
   return b.dateAdded.localeCompare(a.dateAdded);
 }
 
+function isAddedWithinLast30Days(vulnerability: KevVulnerability) {
+  const addedAt = Date.parse(vulnerability.dateAdded);
+
+  if (!Number.isFinite(addedAt)) return false;
+
+  return Date.now() - addedAt <= 30 * 24 * 60 * 60 * 1000;
+}
+
 function groupByVendor(vulnerabilities: KevVulnerability[]) {
   const vendors = new Map<string, Map<string, KevVulnerability[]>>();
 
@@ -111,6 +119,18 @@ export default function KevTable({
     () => groupByVendor(matchingVulnerabilities),
     [matchingVulnerabilities],
   );
+  const recentVulnerabilities = useMemo(
+    () =>
+      vulnerabilities
+        .filter(isAddedWithinLast30Days)
+        .sort(sortByLatest)
+        .slice(0, 15),
+    [vulnerabilities],
+  );
+  const recentVendorGroups = useMemo(
+    () => groupByVendor(recentVulnerabilities),
+    [recentVulnerabilities],
+  );
 
   const letters = useMemo(
     () =>
@@ -124,6 +144,8 @@ export default function KevTable({
   const visibleVendorGroups =
     normalizedKeyword
       ? vendorGroups
+      : selectedLetter === "Recent 15"
+      ? recentVendorGroups
       : selectedLetter === "Top 15"
       ? vendorGroups.slice(0, 15)
       : vendorGroups.filter(
@@ -169,13 +191,15 @@ export default function KevTable({
       </div>
 
       <div className="mb-4 rounded-2xl border border-[#8DA99B]/50 bg-white/50 p-4">
-        <div className="mb-4 grid gap-3 md:grid-cols-[1fr_320px] md:items-end">
+        <div className="mb-4 grid gap-4">
           <div>
             <p className="text-sm font-bold text-[#466357]">
               Browse vendors
             </p>
             <h3 className="mt-1 text-2xl font-black text-[#243B32]">
-              {selectedLetter === "Top 15" && !normalizedKeyword
+              {selectedLetter === "Recent 15" && !normalizedKeyword
+                ? "15 Most Recent"
+                : selectedLetter === "Top 15" && !normalizedKeyword
                 ? "Top 15 Impacted"
                 : normalizedKeyword
                   ? "Keyword matches"
@@ -212,6 +236,20 @@ export default function KevTable({
           >
             Top 15 Impacted
           </button>
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedLetter("Recent 15");
+              setKeyword("");
+            }}
+            className={`rounded-xl border px-4 py-2 text-sm font-bold ${
+              selectedLetter === "Recent 15"
+                ? "border-[#3F6B5A] bg-[#3F6B5A] text-white"
+                : "border-[#8DA99B] text-[#243B32]"
+            }`}
+          >
+            15 Most Recent
+          </button>
 
           {letters.map((letter) => (
             <button
@@ -235,13 +273,25 @@ export default function KevTable({
 
         <p className="mt-3 text-sm font-semibold text-[#466357]">
           Showing {visibleVendorGroups.length} vendors and{" "}
-          {matchingVulnerabilities.length} CVEs
+          {selectedLetter === "Recent 15" && !normalizedKeyword
+            ? recentVulnerabilities.length
+            : matchingVulnerabilities.length} CVEs
           {normalizedKeyword
             ? ` matching "${keyword.trim()}"`
+            : selectedLetter === "Recent 15"
+              ? " added to CISA KEV in the last 30 days"
             : selectedLetter === "Top 15"
               ? " in Top 15 Impacted"
               : ` under ${selectedLetter}`}
         </p>
+        {selectedLetter === "Recent 15" &&
+          !normalizedKeyword &&
+          recentVulnerabilities.length === 0 && (
+            <p className="mt-2 rounded-xl border border-[#D6C89B]/60 bg-[#FFF3B0]/25 p-3 text-sm font-bold text-[#5B4B22]">
+              No exploited CVEs were newly added to CISA KEV in the last 30
+              days.
+            </p>
+          )}
       </div>
 
       <div className="space-y-4 rounded-2xl border border-[#8DA99B]/50 bg-white/50 p-4">

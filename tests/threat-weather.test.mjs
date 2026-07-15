@@ -172,7 +172,17 @@ test("stale cached-looking data is excluded from current scoring", () => {
         ttlMs: 1,
       }),
     ],
-    [sourceStatus("UnitSource")],
+    [
+      {
+        name: "UnitSource",
+        configured: true,
+        mode: "none",
+        status: "stale",
+        retrievedAt: null,
+        itemCount: 0,
+        message: "Dataset is stale",
+      },
+    ],
     1,
     "cached",
     now,
@@ -201,6 +211,30 @@ test("signal-only scanning data does not become IOC evidence", () => {
   assert.equal(output.contributors.find((item) => item.name === "internetScanning").value, 10000);
 });
 
+test("empty live sources do not count as unavailable", () => {
+  const output = aggregate.aggregateThreatWeather(
+    [dataset()],
+    [
+      sourceStatus("UnitSource"),
+      {
+        name: "EmptySource",
+        configured: true,
+        mode: "live",
+        status: "empty",
+        retrievedAt: new Date(now).toISOString(),
+        itemCount: 0,
+        message: "Live source returned no current validated IOCs",
+      },
+    ],
+    2,
+    "live",
+    now,
+  );
+
+  assert.equal(output.health, "available");
+  assert.match(output.healthMessage, /2 live sources/);
+});
+
 test("development mock mode is explicit", async () => {
   sources.clearThreatWeatherCache();
   process.env.MALSIGHT_USE_MOCK_THREAT_WEATHER = "true";
@@ -216,26 +250,17 @@ test("development mock mode is explicit", async () => {
   assert.ok(result.datasets.some((item) => item.source === "Local development mock"));
 });
 
-test("optional keyed sources are reported unconfigured without API keys", async () => {
+test("source list only includes no-account live sources", async () => {
   sources.clearThreatWeatherCache();
-  const previousVirusTotalKey = process.env.VIRUSTOTAL_API_KEY;
-  const previousGreyNoiseKey = process.env.GREYNOISE_API_KEY;
-  delete process.env.VIRUSTOTAL_API_KEY;
-  delete process.env.GREYNOISE_API_KEY;
 
   const failingFetch = async () => {
     throw new Error("network disabled in test");
   };
   const result = await sources.fetchThreatWeatherDatasets(failingFetch, now);
 
-  if (previousVirusTotalKey) process.env.VIRUSTOTAL_API_KEY = previousVirusTotalKey;
-  if (previousGreyNoiseKey) process.env.GREYNOISE_API_KEY = previousGreyNoiseKey;
-
-  const virusTotal = result.statuses.find((item) => item.name === "VirusTotal");
-  const greyNoise = result.statuses.find((item) => item.name === "GreyNoise");
-
-  assert.equal(virusTotal.configured, false);
-  assert.equal(virusTotal.message, "Source is not configured");
-  assert.equal(greyNoise.configured, false);
-  assert.equal(greyNoise.message, "Source is not configured");
+  assert.equal(result.totalConfiguredSources, 9);
+  assert.equal(result.statuses.some((item) => item.name === "VirusTotal"), false);
+  assert.equal(result.statuses.some((item) => item.name === "GreyNoise"), false);
+  assert.equal(result.statuses.some((item) => item.name === "MalwareBazaar"), false);
+  assert.equal(result.statuses.some((item) => item.name === "ThreatFox"), false);
 });

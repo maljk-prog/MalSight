@@ -84,10 +84,10 @@ function healthMessage(available: number, total: number) {
   }
 
   if (available < total) {
-    return `Partial observations — ${available} of ${total} sources available.`;
+    return `Partial observations — ${available} of ${total} sources live.`;
   }
 
-  return `Threat Weather available — ${available} validated sources.`;
+  return `Threat Weather available — ${available} live sources.`;
 }
 
 function mergeSignals(datasets: SourceDataset[]) {
@@ -200,7 +200,12 @@ export function aggregateThreatWeather(
       .map((dataset) => dataset.retrievedAt)
       .sort()
       .at(-1) || null;
-  const availableSources = new Set(usableDatasets.map((dataset) => dataset.source)).size;
+  const availableSources = statuses.filter(
+    (status) =>
+      status.configured &&
+      (status.mode === "live" || status.mode === "cached") &&
+      (status.status === "validated" || status.status === "empty"),
+  ).length;
   const health =
     mode === "mock"
       ? "mock"
@@ -235,7 +240,7 @@ export function aggregateThreatWeather(
       sourceBreakdown: sourceBreakdown(usableDatasets),
       deltas: {
         available: false,
-        message: "Insufficient historical data",
+        message: "Live 24-hour collection",
       },
       topFamily: topFamily(usableDatasets),
       freshness: latestFreshness,

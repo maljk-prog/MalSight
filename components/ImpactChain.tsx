@@ -189,7 +189,16 @@ export default function ImpactChain() {
                             {impactIndex + 1}
                           </div>
                           <div className="rounded-xl bg-[#F5F4EF] p-4 text-[#466357]">
-                            {impact}
+                            {impact.startsWith("Consumer or Customer Impact:") ? (
+                              <>
+                                <strong className="font-black text-[#243B32]">
+                                  Consumer or Customer Impact:
+                                </strong>{" "}
+                                {impact.replace("Consumer or Customer Impact:", "").trim()}
+                              </>
+                            ) : (
+                              impact
+                            )}
                           </div>
                         </div>
                       ))}
