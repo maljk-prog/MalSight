@@ -29,6 +29,15 @@ type ThreatSource = {
   longitude: number;
   asn: number | null;
   organization: string;
+  providers: string[];
+  categories: string[];
+};
+
+type ThreatProvider = {
+  name: string;
+  url: string;
+  status: "available" | "unavailable";
+  message: string;
 };
 
 type AsnSummary = {
@@ -49,6 +58,7 @@ type ThreatMapResponse = {
   warning?: string;
   telemetryDates?: string[];
   telemetryWindow?: string;
+  providers?: ThreatProvider[];
   asns?: AsnSummary[];
   countries?: CountrySummary[];
   sources?: ThreatSource[];
@@ -83,10 +93,39 @@ function formatNumber(value: number) {
   return new Intl.NumberFormat("en").format(value);
 }
 
+function summarizeCountries(sources: ThreatSource[]): CountrySummary[] {
+  const map = new Map<string, CountrySummary>();
+  sources.forEach((source) => {
+    const item = map.get(source.countryCode) || {
+      country: source.country, countryCode: source.countryCode, attacks: 0, reports: 0,
+      ipCount: 0, daysSeen: 0, latitude: 0, longitude: 0,
+    };
+    item.attacks += source.attacks; item.reports += source.reports; item.ipCount += 1;
+    item.daysSeen += source.daysSeen; item.latitude += source.latitude; item.longitude += source.longitude;
+    map.set(source.countryCode, item);
+  });
+  return Array.from(map.values()).map((item) => ({ ...item, latitude: item.latitude / item.ipCount,
+    longitude: item.longitude / item.ipCount })).sort((a, b) => b.attacks - a.attacks);
+}
+
+function summarizeAsns(sources: ThreatSource[]): AsnSummary[] {
+  const map = new Map<string, AsnSummary>();
+  sources.forEach((source) => {
+    const key = source.asn ? `AS${source.asn}` : source.organization;
+    const item = map.get(key) || { asn: source.asn, organization: source.organization,
+      attacks: 0, reports: 0, ipCount: 0, countryCount: 0, countries: [], daysSeen: 0 };
+    item.attacks += source.attacks; item.reports += source.reports; item.ipCount += 1; item.daysSeen += source.daysSeen;
+    if (!item.countries.includes(source.country)) item.countries.push(source.country);
+    item.countryCount = item.countries.length; map.set(key, item);
+  });
+  return Array.from(map.values()).sort((a, b) => b.attacks - a.attacks);
+}
+
 export default function ThreatMap() {
   const [data, setData] = useState<ThreatMapResponse | null>(null);
   const [mapFeatures, setMapFeatures] = useState<GeoJsonFeature[]>([]);
   const [timeframe, setTimeframe] = useState("3d");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">(
     "loading",
   );
@@ -115,9 +154,18 @@ export default function ThreatMap() {
       .catch(() => setMapFeatures([]));
   }, []);
 
-  const countries = data?.countries || [];
-  const sources = data?.sources || [];
-  const asns = data?.asns || [];
+  const allSources = data?.sources || [];
+  const categoryCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    allSources.forEach((source) => source.categories.forEach((category) =>
+      counts.set(category, (counts.get(category) || 0) + 1)));
+    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+  }, [allSources]);
+  const sources = useMemo(() => selectedCategories.length
+    ? allSources.filter((source) => selectedCategories.some((category) => source.categories.includes(category)))
+    : allSources, [allSources, selectedCategories]);
+  const countries = useMemo(() => summarizeCountries(sources), [sources]);
+  const asns = useMemo(() => summarizeAsns(sources), [sources]);
   const topAsn = asns[0];
   const activeTimeframe =
     TIMEFRAMES.find((item) => item.id === timeframe) || TIMEFRAMES[1];
@@ -202,6 +250,39 @@ export default function ThreatMap() {
 
         {status === "ready" && (
           <>
+            <div className="mb-4 flex flex-wrap items-center gap-2" aria-label="Threat signal filters">
+              <button
+                type="button"
+                onClick={() => setSelectedCategories([])}
+                className={`rounded-full border px-3 py-2 text-xs font-black transition ${
+                  selectedCategories.length === 0
+                    ? "border-[#3F6B5A] bg-[#3F6B5A] text-white"
+                    : "border-[#8DA99B] bg-white/60 text-[#3F6B5A]"
+                }`}
+              >
+                All signals · {allSources.length}
+              </button>
+              {categoryCounts.map(([category, count]) => {
+                const active = selectedCategories.includes(category);
+                return (
+                  <button
+                    key={category}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => setSelectedCategories((current) => active
+                      ? current.filter((item) => item !== category)
+                      : [...current, category])}
+                    className={`rounded-full border px-3 py-2 text-xs font-black transition ${
+                      active
+                        ? "border-[#3F6B5A] bg-[#73E2A7] text-[#13231D]"
+                        : "border-[#8DA99B] bg-white/60 text-[#3F6B5A] hover:bg-white"
+                    }`}
+                  >
+                    {category} · {count}
+                  </button>
+                );
+              })}
+            </div>
             <ThreatGlobe
               features={mapFeatures}
               sources={sources}
@@ -210,7 +291,7 @@ export default function ThreatMap() {
 
             <p className="mt-3 text-sm font-semibold text-[#466357]">
               Drag to rotate the earth and scroll to zoom. Hotspots and moving
-              pulses are derived from the same enriched DShield source IPs
+              pulses are derived from the same enriched public-feed source IPs
               listed below. Pulses show observed source activity, not invented
               source-to-destination routes.
             </p>
@@ -232,6 +313,26 @@ export default function ThreatMap() {
                 )}
               </div>
               {data?.warning && <p className="mt-1">{data.warning}</p>}
+              {data?.providers && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {data.providers.map((provider) => (
+                    <a
+                      key={provider.name}
+                      href={provider.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      title={provider.message}
+                      className={`rounded-full border px-2 py-1 ${
+                        provider.status === "available"
+                          ? "border-[#8DA99B] bg-white/50 text-[#3F6B5A]"
+                          : "border-[#C98D7B] bg-[#F8D7CF]/40 text-[#7A382B]"
+                      }`}
+                    >
+                      {provider.name}: {provider.status}
+                    </a>
+                  ))}
+                </div>
+              )}
             </div>
           </>
         )}
@@ -370,6 +471,12 @@ export default function ThreatMap() {
                   </p>
                   <p className="mt-1 text-xs font-semibold text-[#466357]">
                     Last reported {source.lastSeen}
+                  </p>
+                  <p className="mt-1 text-xs font-semibold text-[#466357]">
+                    Seen by {source.providers.join(", ")}
+                  </p>
+                  <p className="mt-1 text-xs font-bold text-[#3F6B5A]">
+                    {source.categories.join(" · ")}
                   </p>
                 </div>
               ))}

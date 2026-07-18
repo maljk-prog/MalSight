@@ -29,6 +29,8 @@ type GlobeSource = {
   longitude: number;
   organization: string;
   asn: number | null;
+  providers: string[];
+  categories: string[];
 };
 
 type GlobeCountry = {
@@ -166,6 +168,15 @@ function drawProjectedLine(
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat("en").format(value);
+}
+
+function signalColor(source: GlobeSource, palette: Palette) {
+  const category = source.categories[0];
+  if (category === "Botnet C2") return "#FF6B6B";
+  if (category === "Compromised Host") return "#F4B942";
+  if (category === "Abuse Activity") return "#C084FC";
+  if (category === "Scanning") return "#73E2A7";
+  return palette.warm;
 }
 
 export default function ThreatGlobe({
@@ -349,10 +360,11 @@ export default function ThreatGlobe({
       projectedSources.forEach((source) => {
         if (source.z <= 0) return;
         const intensity = Math.sqrt(source.attacks / maxSourceAttacks);
+        const sourceColor = signalColor(source, palette);
         const phase = ((time / 1900 + (hash(source.ip) % 1000) / 1000) % 1 + 1) % 1;
         const pulseRadius = 3 + phase * (12 + intensity * 15);
 
-        context.strokeStyle = withAlpha(palette.light, (1 - phase) * (0.35 + intensity * 0.5));
+        context.strokeStyle = withAlpha(sourceColor, (1 - phase) * (0.35 + intensity * 0.5));
         context.lineWidth = 1.2;
         context.beginPath();
         context.arc(source.x, source.y, pulseRadius, 0, Math.PI * 2);
@@ -362,12 +374,12 @@ export default function ThreatGlobe({
         const hopDistance = phase * (10 + intensity * 20);
         const hopX = source.x + Math.cos(angle) * hopDistance;
         const hopY = source.y + Math.sin(angle) * hopDistance * 0.55;
-        context.fillStyle = withAlpha(palette.warm, 0.95 - phase * 0.65);
+        context.fillStyle = withAlpha(sourceColor, 0.95 - phase * 0.65);
         context.beginPath();
         context.arc(hopX, hopY, 1.4 + intensity * 2.4, 0, Math.PI * 2);
         context.fill();
 
-        context.fillStyle = palette.light;
+        context.fillStyle = sourceColor;
         context.beginPath();
         context.arc(source.x, source.y, 1.6 + intensity * 2.2, 0, Math.PI * 2);
         context.fill();
@@ -455,7 +467,7 @@ export default function ThreatGlobe({
       <canvas
         ref={canvasRef}
         role="img"
-        aria-label="Rotatable globe showing real DShield source-IP activity hotspots"
+        aria-label="Rotatable globe showing categorized public threat-feed source-IP activity"
         className="block w-full cursor-grab touch-none active:cursor-grabbing"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -526,9 +538,17 @@ export default function ThreatGlobe({
             {selectedSource.city}, {selectedSource.country}
           </p>
           <p className="mt-3 text-sm font-bold">{formatNumber(selectedSource.attacks)} attacks · {formatNumber(selectedSource.reports)} reports</p>
+          <div className="mt-3 flex flex-wrap gap-1">
+            {selectedSource.categories.map((category) => (
+              <span key={category} className="rounded-full border border-white/20 bg-white/10 px-2 py-1 text-xs font-bold">
+                {category}
+              </span>
+            ))}
+          </div>
           <p className="mt-1 text-xs text-white/65">
             {selectedSource.organization}{selectedSource.asn ? ` · AS${selectedSource.asn}` : ""}
           </p>
+          <p className="mt-2 text-xs text-white/55">Seen by {selectedSource.providers.join(", ")}</p>
         </div>
       )}
     </div>
