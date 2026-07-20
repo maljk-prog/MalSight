@@ -58,6 +58,12 @@ type ThreatMapResponse = {
   warning?: string;
   telemetryDates?: string[];
   telemetryWindow?: string;
+  totals?: {
+    observations: number;
+    uniqueIps: number;
+    attacks: number;
+    reports: number;
+  };
   providers?: ThreatProvider[];
   asns?: AsnSummary[];
   countries?: CountrySummary[];
@@ -169,14 +175,6 @@ export default function ThreatMap() {
   const topAsn = asns[0];
   const activeTimeframe =
     TIMEFRAMES.find((item) => item.id === timeframe) || TIMEFRAMES[1];
-  const totals = useMemo(
-    () => ({
-      attacks: countries.reduce((sum, country) => sum + country.attacks, 0),
-      reports: countries.reduce((sum, country) => sum + country.reports, 0),
-      ips: sources.length,
-    }),
-    [countries, sources],
-  );
   return (
     <div>
       <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
@@ -214,19 +212,19 @@ export default function ThreatMap() {
           <div className="grid grid-cols-3 gap-3 text-center text-sm font-semibold text-[#243B32]">
             <div className="rounded-2xl bg-white/60 p-3 [container-type:inline-size]">
               <p className="text-[clamp(1.05rem,20cqw,1.75rem)] font-black leading-none">
-                {formatNumber(totals.ips)}
+                {formatNumber(data?.totals?.observations || 0)}
               </p>
-              <p>IPs</p>
+              <p>Observations</p>
             </div>
             <div className="rounded-2xl bg-white/60 p-3 [container-type:inline-size]">
               <p className="text-[clamp(1.05rem,20cqw,1.75rem)] font-black leading-none">
-                {formatNumber(countries.length)}
+                {formatNumber(data?.totals?.uniqueIps || 0)}
               </p>
-              <p>Countries</p>
+              <p>Unique IPs</p>
             </div>
             <div className="rounded-2xl bg-white/60 p-3 [container-type:inline-size]">
               <p className="text-[clamp(1.05rem,20cqw,1.75rem)] font-black leading-none">
-                {formatNumber(totals.attacks)}
+                {formatNumber(data?.totals?.attacks || 0)}
               </p>
               <p>Attacks</p>
             </div>
@@ -293,7 +291,9 @@ export default function ThreatMap() {
               Drag to rotate the earth and scroll to zoom. Hotspots and moving
               pulses are derived from the same enriched public-feed source IPs
               listed below. Pulses show observed source activity, not invented
-              source-to-destination routes.
+              source-to-destination routes. Headline totals include every
+              record loaded from the available feeds; map markers require a
+              successful GeoIP lookup.
             </p>
 
             <div className="mt-4 rounded-xl border border-[#D6C89B]/60 bg-[#FFF3B0]/20 p-3 text-xs font-semibold leading-relaxed text-[#5B4B22]">

@@ -548,6 +548,57 @@ function cveSourceLabel(source?: NewsItem["cveSource"]) {
   return "not found in RSS or source page";
 }
 
+function editorialHeadline(cluster: StoryCluster) {
+  const subject = cluster.entities[0] || cluster.cves[0] || cluster.sector;
+  if (cluster.isRecap) return `${subject} Security Roundup: What Defenders Should Know`;
+  if (cluster.categories.includes("Exploited CVE")) {
+    if (cluster.entities.includes("CISA")) return `CISA Warns of Active ${subject} Exploitation`;
+    if (cluster.cves[0]) return `${subject} Exploitation Draws Defender Attention`;
+    const sourceHeadline = cluster.articles[0]?.item.title.trim();
+    if (sourceHeadline) return sourceHeadline.length > 105 ? `${sourceHeadline.slice(0, 102).trim()}…` : sourceHeadline;
+  }
+  const sourceHeadline = cluster.articles[0]?.item.title.trim();
+  if (sourceHeadline) return sourceHeadline.length > 105 ? `${sourceHeadline.slice(0, 102).trim()}…` : sourceHeadline;
+  return `${subject} Security Development Worth Watching`;
+}
+
+function editorialSummary(cluster: StoryCluster) {
+  const entityText = cluster.entities.slice(0, 3).join(", ") || cluster.sector;
+  const topic = cluster.categories.slice(0, 2).join(" and ").toLowerCase();
+  if (cluster.articles.length === 1) {
+    return `Our desk flagged a report covering ${topic} activity involving ${entityText}.`;
+  }
+  return `Our desk linked ${cluster.articles.length} reports covering ${topic} activity involving ${entityText}.`;
+}
+
+function reporterNotes(cluster: StoryCluster) {
+  if (cluster.categories.includes("Exploited CVE")) {
+    return `${cluster.whyItMatters} Prioritize exposure and patch validation where the affected technology exists.`;
+  }
+  if (cluster.categories.includes("Breach")) {
+    return `${cluster.whyItMatters} Watch the primary source for confirmed scope before changing controls.`;
+  }
+  return cluster.whyItMatters;
+}
+
+function suggestedChecks(cluster: StoryCluster) {
+  const checks: string[] = [];
+  if (cluster.categories.includes("Exploited CVE") || cluster.categories.includes("Patch/Update")) checks.push("Verify patch status", "Check internet exposure");
+  if (cluster.categories.includes("Breach") || cluster.categories.includes("Credential Theft")) checks.push("Review authentication logs", "Inspect unusual data exports");
+  if (cluster.categories.includes("Malware") || cluster.categories.includes("Ransomware")) checks.push("Hunt for unusual persistence", "Check outbound connections");
+  if (!checks.length) checks.push("Review related exposure", "Confirm logging coverage");
+  return unique(checks).slice(0, 4);
+}
+
+function primarySource(cluster: StoryCluster) {
+  return cluster.articles[0]?.item.source || cluster.sources[0] || "Not available";
+}
+
+function publishedDate(cluster: StoryCluster) {
+  if (!cluster.latestTimestamp) return "Not available";
+  return new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(new Date(cluster.latestTimestamp));
+}
+
 export default function NewsFeed({
   selectedCve = "",
   onSelectCve,
@@ -633,33 +684,27 @@ export default function NewsFeed({
   }, []);
 
   return (
-    <div>
-      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+    <div className="news-room-shell">
+      <div className="news-room-header">
         <div>
-          <p className="text-sm font-bold tracking-[0.3em] text-[#3F6B5A]">
-            GLOBAL BREACH NEWS
+          <p className="news-room-eyebrow">
+            MALSIGHT EDITORIAL DESK · LIVE ROOM
           </p>
-          <h2 className="mt-2 text-3xl font-black">
-            Breach intelligence brief
+          <h2 className="mt-3 text-4xl font-black text-[#FFF4D6] sm:text-5xl">
+            News Room
           </h2>
-          <p className="mt-2 text-[#466357]">
-            Related stories are grouped into plain-English security clusters
-            with CVEs, affected sectors, impact, and defender takeaways.
+          <p className="mt-3 max-w-2xl font-semibold leading-relaxed text-[#D9C9A1]">
+            Here are the stories our newsroom thought were worth pinning today—grouped,
+            compared, and annotated for defenders.
           </p>
         </div>
 
-        {status === "ready" && (
-          <div className="text-sm font-semibold text-[#466357]">
-            <p>{clusters.length} story clusters</p>
-            <p>Updated {formatUpdated(updatedAt)}</p>
-          </div>
-        )}
       </div>
 
-      {status === "ready" && (
-        <section className="mb-4 rounded-2xl border border-[#8DA99B]/50 bg-white/50 p-5">
+      {status === "ready" && clusters[0] && (
+        <section className="news-room-brief">
           <p className="text-sm font-black tracking-[0.24em] text-[#3F6B5A]">
-            TODAY'S BREACH BRIEF
+            MORNING BRIEFING
           </p>
           <div className="mt-4 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
             <div>
@@ -667,7 +712,7 @@ export default function NewsFeed({
                 Top story
               </p>
               <h3 className="text-2xl font-black text-[#243B32]">
-                {brief.topStory}
+                {editorialHeadline(clusters[0])}
               </h3>
               <p className="mt-3 text-sm font-semibold leading-relaxed text-[#466357]">
                 {brief.actionTheme}
@@ -684,10 +729,10 @@ export default function NewsFeed({
         </section>
       )}
 
-      <div className="mb-4 rounded-2xl border border-[#8DA99B]/50 bg-white/50 p-4">
+      <div className="news-room-deskbar">
         <label className="block">
           <span className="mb-2 block text-sm font-bold text-[#466357]">
-            Search brief
+            Search the clipping desk
           </span>
           <input
             type="search"
@@ -697,7 +742,7 @@ export default function NewsFeed({
               setPage(0);
             }}
             placeholder="Entity, CVE, sector, source, keyword..."
-            className="w-full rounded-xl border border-[#8DA99B] bg-white/80 px-4 py-3 text-sm font-semibold text-[#243B32] outline-none focus:border-[#3F6B5A]"
+            className="news-room-search"
           />
         </label>
 
@@ -710,10 +755,10 @@ export default function NewsFeed({
                 setActiveFilter(filter);
                 setPage(0);
               }}
-              className={`rounded-full border px-4 py-2 text-xs font-black transition ${
+              className={`news-room-filter ${
                 activeFilter === filter
-                  ? "border-[#3F6B5A] bg-[#3F6B5A] text-white"
-                  : "border-[#8DA99B]/60 bg-white/60 text-[#466357] hover:bg-white"
+                  ? "is-active"
+                  : ""
               }`}
             >
               {filter}
@@ -722,11 +767,14 @@ export default function NewsFeed({
         </div>
       </div>
 
-      <section className="mb-5 rounded-2xl border border-[#8DA99B]/50 bg-white/50 p-4">
+      <section className="news-room-board">
         <div className="mb-4 flex items-center justify-between gap-3">
-          <h3 className="text-2xl font-black text-[#243B32]">Story Clusters</h3>
-          <p className="text-sm font-bold text-[#466357]">
-            {filteredClusters.length} shown
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-[#5A2F20]">Curated by the morning shift</p>
+            <h3 className="text-3xl font-black text-[#2E2118]">Today's Board</h3>
+          </div>
+          <p className="news-room-board-count">
+            {filteredClusters.length} pinned
           </p>
         </div>
 
@@ -748,80 +796,73 @@ export default function NewsFeed({
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className="grid gap-6 xl:grid-cols-2">
           {filteredClusters.map((cluster) => (
-            <article key={cluster.key} className="rounded-2xl bg-[#E6E4DE] p-5">
+            <article key={cluster.key} className="news-room-story-note">
+              <span className="news-room-pin" aria-hidden="true" />
               <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div>
                   <h4 className="text-2xl font-black text-[#243B32]">
-                    {cluster.title}
+                    {editorialHeadline(cluster)}
                   </h4>
                   <p className="mt-2 max-w-4xl text-sm font-semibold leading-relaxed text-[#466357]">
-                    {cluster.summary}
+                    {editorialSummary(cluster)}
                   </p>
                 </div>
-                <div className="shrink-0 rounded-xl border border-[#8DA99B]/55 bg-white/55 px-4 py-3 text-sm font-black text-[#243B32]">
-                  {cluster.articles.length} source{cluster.articles.length === 1 ? "" : "s"}
-                </div>
+                <p className="news-room-desk-note">Desk note · {cluster.categories[0]}</p>
               </div>
 
-              <div className="mt-4 flex flex-wrap gap-2">
-                {cluster.categories.slice(0, 5).map((category) => (
-                  <Pill key={category}>{category}</Pill>
-                ))}
-                <Pill>{cluster.impactLabel}</Pill>
-                <Pill>{cluster.defenderRelevance}</Pill>
-                <Pill>{cluster.publicRelevance}</Pill>
-                <Pill>{cluster.confidence}</Pill>
+              <div className="news-room-story-meta">
+                <p><span>Sources</span>{cluster.articles.length}</p>
+                <p><span>Published</span>{publishedDate(cluster)}</p>
+                <p><span>Primary</span>{primarySource(cluster)}</p>
+                <p><span>Confidence</span>{cluster.confidence.replace(" confidence", "")}</p>
+                <p><span>Defender priority</span>{cluster.defenderRelevance.includes("High") ? "High" : "Watch"}</p>
               </div>
 
-              <div className="mt-4 grid gap-3 lg:grid-cols-2">
-                <div className="rounded-xl bg-[#F5F4EF] p-4">
-                  <p className="text-xs font-black tracking-widest text-[#3F6B5A]">
-                    Why it matters
-                  </p>
-                  <p className="mt-2 text-sm font-semibold text-[#466357]">
-                    {cluster.whyItMatters}
-                  </p>
-                </div>
-                <div className="rounded-xl bg-[#F5F4EF] p-4">
-                  <p className="text-xs font-black tracking-widest text-[#3F6B5A]">
-                    Defender takeaway
-                  </p>
-                  <p className="mt-2 text-sm font-semibold text-[#466357]">
-                    {cluster.defenderTakeaway}
-                  </p>
-                </div>
+              <div className="news-room-reporter-note">
+                <p>Reporter Notes</p>
+                <span>{reporterNotes(cluster)}</span>
               </div>
 
-              <div className="mt-4 grid gap-3 text-sm font-bold text-[#466357] md:grid-cols-3">
-                <p>
-                  Related CVEs:{" "}
-                  <CveLinks cves={cluster.cves} onSelectCve={onSelectCve} />
-                </p>
-                <p>Affected sector: {cluster.sector}</p>
-                <p>
-                  Preventability: {cluster.preventability}.{" "}
-                  <span className="font-semibold">{cluster.preventabilityReason}</span>
-                </p>
+              <div className="mt-4">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#6A3928]">Suggested Checks</p>
+                <ul className="mt-2 grid gap-1 text-sm font-bold text-[#4D433A] sm:grid-cols-2">
+                  {suggestedChecks(cluster).map((check) => <li key={check}>▸ {check}</li>)}
+                </ul>
               </div>
 
-              <details className="mt-4 rounded-xl border border-[#8DA99B]/45 bg-white/45 p-4">
-                <summary className="cursor-pointer text-sm font-black text-[#243B32]">
-                  View details and sources
+              <details className="news-room-drawer">
+                <summary>
+                  Open briefing file{" "}
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      color: "var(--theme-accent-strong)",
+                      fontSize: 28,
+                      fontWeight: 1000,
+                      lineHeight: 1,
+                      textShadow: "1px 0 currentColor",
+                    }}
+                  >
+                    ＋
+                  </span>
                 </summary>
                 <div className="mt-4 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
                   <div className="space-y-2 text-sm font-semibold text-[#466357]">
-                    <p>Sources: {cluster.sources.join(", ")}</p>
+                    <p><b>Full summary:</b> {cluster.summary} {cluster.whyItMatters}</p>
+                    <p><b>Timeline:</b> Latest report {cluster.articles[0]?.item.pubDate}</p>
+                    <p><b>Related sources:</b> {cluster.sources.join(", ")}</p>
                     <p>
-                      Entities:{" "}
+                      <b>Entities:</b>{" "}
                       {cluster.entities.length ? cluster.entities.join(", ") : "None identified"}
                     </p>
                     <p>
-                      CVEs: <CveLinks cves={cluster.cves} onSelectCve={onSelectCve} />
+                      <b>CVEs:</b> <CveLinks cves={cluster.cves} onSelectCve={onSelectCve} />
                     </p>
-                    <p>Ranking score: {cluster.score}</p>
-                    <p>Latest source date: {cluster.articles[0]?.item.pubDate}</p>
+                    <p><b>Affected sector:</b> {cluster.sector}</p>
+                    <p><b>Tags:</b> {cluster.categories.join(", ")}</p>
+                    <p><b>Ranking score:</b> {cluster.score}</p>
                   </div>
                   <div className="space-y-3">
                     {cluster.articles.slice(0, 3).map(({ item, analysis }) => (
@@ -856,7 +897,9 @@ export default function NewsFeed({
         </div>
       </section>
 
-      <section className="rounded-2xl border border-[#8DA99B]/50 bg-white/50 p-4">
+      <details className="news-room-archive">
+        <summary>Wire archive · all source articles</summary>
+      <section className="mt-4 rounded-2xl border border-[#8DA99B]/50 bg-white/50 p-4">
         <div className="mb-4 flex items-center justify-between gap-3">
           <h3 className="text-2xl font-black text-[#243B32]">Raw Article Feed</h3>
           {status === "ready" && (
@@ -962,6 +1005,7 @@ export default function NewsFeed({
           </div>
         )}
       </section>
+      </details>
     </div>
   );
 }

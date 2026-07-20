@@ -81,7 +81,7 @@ async function fetchPlainFeed(name: string, category: string, url: string): Prom
     const response = await fetchTimed(url);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const observations = (await response.text()).split(/\r?\n/).map((line) => line.trim())
-      .filter((line) => line && !line.startsWith("#") && isPublicIpv4(line)).slice(0, 5000)
+      .filter((line) => line && !line.startsWith("#") && isPublicIpv4(line))
       .map((ip) => observation(ip, name, category));
     if (!observations.length) throw new Error("Empty or malformed response");
     return { name, url, observations, dates: [dateDaysAgo(0)], status: "available",
@@ -192,6 +192,14 @@ export async function GET(request: Request) {
     fetchPlainFeed("blocklist.de", "Abuse Activity", "https://lists.blocklist.de/lists/all.txt"),
     fetchFeodo(),
   ]);
+  const loadedObservations = providers.flatMap((provider) => provider.observations);
+  const mergedObservations = merge(providers);
+  const totals = loadedObservations.reduce((summary, item) => {
+    summary.observations += 1;
+    summary.attacks += item.attacks;
+    summary.reports += item.reports;
+    return summary;
+  }, { observations: 0, uniqueIps: mergedObservations.size, attacks: 0, reports: 0 });
   const enriched = (await Promise.all(selectBalanced(providers).map(geolocate)))
     .filter((item): item is EnrichedSource => Boolean(item))
     .sort((a, b) => b.providers.length - a.providers.length || b.attacks - a.attacks);
@@ -199,6 +207,7 @@ export async function GET(request: Request) {
   return Response.json({
     updatedAt: new Date().toISOString(), requestedDays,
     source: `${providers.filter((item) => item.status === "available").length} of ${providers.length} public intelligence feeds available`,
+    totals,
     providers: providers.map(({ name, url, status, message }) => ({ name, url, status, message })),
     telemetryDates: dshieldDates,
     telemetryWindow: dshieldDates.length ? `${dshieldDates.at(-1)} through ${dshieldDates[0]} (DShield); other feeds are current snapshots`
