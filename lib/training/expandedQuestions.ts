@@ -190,6 +190,25 @@ const distractors = [
   "Assume a single technical control removes the need for verification",
 ];
 
+const explainDistractor = (choice: string, topic: Topic): string => {
+  const concept = topic.concept.toLowerCase();
+
+  switch (choice) {
+    case distractors[0]:
+      return `An undocumented workaround is not repeatable or auditable, and the missing owner leaves nobody accountable for maintaining it. It substitutes an informal bypass for actually applying ${concept}.`;
+    case distractors[1]:
+      return `Broadening access or exposure increases privilege and attack surface for the sake of convenience. That adds risk instead of using ${concept} to control the stated condition.`;
+    case distractors[2]:
+      return `Disabling monitoring removes the telemetry needed to detect failure, investigate misuse, and prove what happened. It weakens evidence and oversight without addressing ${concept}.`;
+    case distractors[3]:
+      return `Deferring the decision leaves the condition untreated and creates no owner, deadline, or risk record. A defensible ${concept} decision must be documented and tracked to completion.`;
+    case distractors[4]:
+      return `A single control can be misconfigured, bypassed, or become ineffective over time. Assuming it is sufficient skips the verification needed to show that ${concept} is working in this situation.`;
+    default:
+      return `“${choice}” does not resolve the stated condition. The stronger response is to ${topic.correct.charAt(0).toLowerCase()}${topic.correct.slice(1)}.`;
+  }
+};
+
 const prompts: Record<Difficulty, (topic: Topic) => string> = {
   green: (topic) => `Which statement BEST describes ${topic.concept}?`,
   orange: (topic) => `While ${topic.context}, which approach should an analyst recommend FIRST?`,
@@ -211,7 +230,7 @@ export const questionBank: QuizQuestion[] = Object.entries(catalog).flatMap(([do
       answers: ids.map((id, index) => ({ id, text: choices[index] })),
       correctAnswer,
       explanation: `${topic.correct}. This directly addresses ${topic.concept.toLowerCase()} in the stated situation while preserving accountability and evidence.`,
-      answerExplanations: Object.fromEntries(ids.map((id, index) => [id, index === correctIndex ? `This is the best answer because it applies ${topic.concept.toLowerCase()} directly.` : "This choice creates avoidable risk, weakens assurance, or fails to address the stated security objective."])) as Record<AnswerId, string>,
+      answerExplanations: Object.fromEntries(ids.map((id, index) => [id, index === correctIndex ? `This is the best answer because it applies ${topic.concept.toLowerCase()} directly.` : explainDistractor(choices[index], topic)])) as Record<AnswerId, string>,
       keyConcept: topic.concept,
     };
   })),
