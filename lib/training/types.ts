@@ -8,7 +8,11 @@ export type SecurityDomain =
   | "identity-access-management"
   | "security-assessment-testing"
   | "security-operations"
-  | "software-development-security";
+  | "software-development-security"
+  | "digital-forensics-incident-response"
+  | "detection-engineering-threat-hunting"
+  | "malware-analysis-reverse-engineering"
+  | "cloud-container-security";
 
 export type AnswerId = "A" | "B" | "C" | "D";
 

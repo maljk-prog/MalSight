@@ -157,6 +157,62 @@ const catalog: Record<SecurityDomain, Topic[]> = {
     {concept:"Disaster recovery",correct:"Restore technology services to approved recovery objectives",context:"a regional failure takes systems offline"},
     {concept:"Forensic scoping",correct:"Use evidence-driven indicators and timelines to determine affected identities and assets",context:"one confirmed host may be part of a larger intrusion"},
   ],
+  "digital-forensics-incident-response": [
+    {concept:"Windows Prefetch",correct:"Examine Prefetch filenames, run counts, and timestamps to support evidence of program execution",context:"an analyst must determine whether a suspicious executable ran on Windows"},
+    {concept:"Amcache and Shimcache",correct:"Correlate Amcache and AppCompatCache entries with other artifacts rather than treating them alone as proof of execution",context:"a binary path appears in Windows compatibility artifacts"},
+    {concept:"Windows logon events",correct:"Correlate 4624 logon type, source address, account, and related events to characterize access",context:"Security logs show a successful Windows logon"},
+    {concept:"NTFS timeline analysis",correct:"Use MFT metadata and the USN Journal together to reconstruct file creation, rename, and deletion activity",context:"an attacker renamed and removed tools from an NTFS volume"},
+    {concept:"Volatile memory acquisition",correct:"Acquire RAM with a trusted tool before shutdown when volatile processes, sockets, or injected code matter",context:"a live host may contain fileless malware"},
+    {concept:"Memory process analysis",correct:"Compare process lists, parent relationships, command lines, handles, and memory mappings for hidden or injected activity",context:"a memory image contains an apparently legitimate process"},
+    {concept:"Forensic disk imaging",correct:"Create a bit-for-bit image through a controlled process and verify source and image hashes",context:"a storage device must be preserved for examination"},
+    {concept:"Timeline normalization",correct:"Normalize timestamps to a documented time zone while retaining original values and clock-skew context",context:"evidence comes from systems in several time zones"},
+    {concept:"Registry persistence",correct:"Inspect Run keys, services, scheduled tasks, and relevant user hives while correlating modification times",context:"malware appears to survive user logon and reboot"},
+    {concept:"Browser artifact analysis",correct:"Examine browser history, downloads, cache, cookies, and session databases with profile and timestamp context",context:"a phishing investigation must trace a downloaded payload"},
+    {concept:"Email header analysis",correct:"Trace Received headers from trusted boundaries and evaluate SPF, DKIM, DMARC, and reply-path anomalies",context:"a message may have spoofed an executive sender"},
+    {concept:"Evidence integrity",correct:"Hash evidence at acquisition and verification points while documenting every transfer and transformation",context:"multiple analysts will process the same forensic image"},
+  ],
+  "detection-engineering-threat-hunting": [
+    {concept:"Sysmon process telemetry",correct:"Correlate Event ID 1 process creation with parent image, command line, hashes, user, and host context",context:"a suspicious PowerShell child process appears on an endpoint"},
+    {concept:"Process ancestry hunting",correct:"Hunt for unusual parent-child relationships and validate them against role-specific baselines",context:"office applications may be launching command interpreters"},
+    {concept:"Sigma rule translation",correct:"Translate Sigma field mappings to the target data model and validate the resulting query against known events",context:"a portable detection must run in a specific SIEM"},
+    {concept:"Detection threshold tuning",correct:"Tune thresholds by entity, time window, prevalence, and risk while preserving known attack coverage",context:"a brute-force analytic generates excessive noise"},
+    {concept:"DNS threat hunting",correct:"Analyze query rarity, domain age, entropy, response patterns, and host context before escalation",context:"endpoints make unusual DNS requests at regular intervals"},
+    {concept:"Living-off-the-land detection",correct:"Detect suspicious behavior and context around trusted binaries instead of blocking solely by filename",context:"attackers may abuse certutil, rundll32, or mshta"},
+    {concept:"Credential access telemetry",correct:"Correlate sensitive process access, dump creation, command lines, and identity events for credential theft behavior",context:"defenders suspect LSASS credential dumping"},
+    {concept:"Detection validation",correct:"Replay representative benign and malicious test cases and verify alert fields, severity, and response guidance",context:"a new analytic is ready for production"},
+    {concept:"Telemetry gap analysis",correct:"Map the behavior to required data sources and verify collection, parsing, retention, and field quality",context:"a hunt cannot confirm or refute its hypothesis"},
+    {concept:"ATT&CK mapping",correct:"Map detections to the specific observed behavior and data source rather than the incident label alone",context:"coverage reporting claims an entire ATT&CK technique"},
+    {concept:"Beaconing analysis",correct:"Measure periodicity and jitter while considering destination rarity, byte patterns, and process ownership",context:"a host makes small outbound connections throughout the day"},
+    {concept:"Rare-event hunting",correct:"Rank low-prevalence events against peer groups and enrich them with signer, path, user, and asset context",context:"analysts are searching for novel execution behavior"},
+  ],
+  "malware-analysis-reverse-engineering": [
+    {concept:"Static malware triage",correct:"Collect hashes, file type, strings, imports, sections, signatures, and metadata without executing the sample",context:"an unknown executable first enters the lab"},
+    {concept:"PE header analysis",correct:"Inspect PE sections, entry point, imports, compilation metadata, and anomalies for evidence of packing or tampering",context:"a Windows executable has unusual structure"},
+    {concept:"Entropy and packing",correct:"Use high entropy and sparse imports as packing indicators, then confirm with structure and runtime behavior",context:"a sample exposes few readable strings"},
+    {concept:"Dynamic sandbox analysis",correct:"Execute the sample in an isolated instrumented environment and capture processes, files, registry, and network behavior",context:"static analysis cannot reveal the payload actions"},
+    {concept:"Safe malware handling",correct:"Use isolated lab systems, non-routable or simulated services, controlled transfer, and disabled host integration",context:"analysts need to detonate an untrusted sample"},
+    {concept:"Debugger analysis",correct:"Set breakpoints around relevant APIs and control flow to inspect decoded data, arguments, and post-unpack execution",context:"a sample decrypts configuration only at runtime"},
+    {concept:"API behavior analysis",correct:"Interpret API call sequences in behavioral context rather than labeling individual APIs as malicious",context:"a process allocates executable memory and starts a thread"},
+    {concept:"Runtime unpacking",correct:"Identify the original entry transition and dump reconstructed memory after code and imports are restored",context:"a packed binary unpacks itself during execution"},
+    {concept:"YARA rule design",correct:"Combine distinctive stable strings or byte patterns with structural conditions and test against clean and malicious corpora",context:"analysts need durable family-level file detection"},
+    {concept:"Configuration extraction",correct:"Trace decoding routines and data references to recover command-and-control, campaign, and feature settings",context:"malware stores an encrypted internal configuration"},
+    {concept:"Malware network indicators",correct:"Extract protocol details and infrastructure indicators while separating durable behavior from disposable addresses",context:"a sample communicates with attacker infrastructure"},
+    {concept:"Persistence analysis",correct:"Correlate created services, tasks, registry changes, startup items, and dropped files with execution evidence",context:"a sample attempts to survive reboot"},
+  ],
+  "cloud-container-security": [
+    {concept:"AWS CloudTrail investigation",correct:"Correlate eventName, userIdentity, sourceIPAddress, session context, resources, and request parameters",context:"an unexpected AWS API action changes a resource"},
+    {concept:"Cloud IAM effective access",correct:"Evaluate identity, resource, boundary, session, and organization policies together to determine effective permission",context:"a cloud role appears more privileged than expected"},
+    {concept:"Cloud metadata protection",correct:"Require hardened metadata access, restrict workload reachability, and prevent untrusted URL fetches from reaching metadata",context:"a web workload may be vulnerable to SSRF"},
+    {concept:"Kubernetes audit logs",correct:"Trace user, verb, resource, namespace, source, authorization, and response fields for cluster API activity",context:"a Kubernetes secret was read unexpectedly"},
+    {concept:"Kubernetes workload identity",correct:"Use dedicated least-privilege service accounts and avoid automatically mounting credentials when unnecessary",context:"pods share a broadly privileged default service account"},
+    {concept:"Container image assurance",correct:"Pin trusted image digests, scan contents, verify signatures and provenance, and control registry promotion",context:"a deployment pulls mutable container tags"},
+    {concept:"Kubernetes network policy",correct:"Define explicit ingress and egress allowances between selected workloads and required destinations",context:"compromised pods should not freely reach every namespace"},
+    {concept:"Container runtime evidence",correct:"Capture pod metadata, runtime events, process and network telemetry, and ephemeral filesystem evidence before teardown",context:"a short-lived container shows suspicious execution"},
+    {concept:"Object storage exposure",correct:"Review public-access controls, bucket policy, ACLs, identity policy, and access logs together",context:"cloud storage may be anonymously readable"},
+    {concept:"Cloud secret management",correct:"Use workload identities and a managed secret store with scoped retrieval, rotation, and audit logging",context:"applications currently receive long-lived cloud keys"},
+    {concept:"Container escape reduction",correct:"Remove privileged mode and dangerous capabilities, enforce isolation controls, and patch the runtime and kernel",context:"a container workload could reach the host"},
+    {concept:"Ephemeral cloud forensics",correct:"Automate snapshots and evidence export while preserving identifiers, audit logs, and collection timestamps",context:"an autoscaled instance may terminate during investigation"},
+  ],
   "software-development-security": [
     {concept:"Secure requirements",correct:"Translate abuse cases and obligations into testable security requirements",context:"a product is entering design"},
     {concept:"Threat modeling",correct:"Analyze assets, trust boundaries, entry points, threats, and mitigations early",context:"a new payment workflow is designed"},
@@ -182,56 +238,94 @@ const catalog: Record<SecurityDomain, Topic[]> = {
 };
 
 const ids: AnswerId[] = ["A", "B", "C", "D"];
-const distractors = [
-  "Rely on an undocumented manual workaround with no accountable owner",
-  "Broaden access or exposure to reduce short-term operational friction",
-  "Disable relevant monitoring until the activity is complete",
-  "Defer the decision indefinitely without documenting or tracking the risk",
-  "Assume a single technical control removes the need for verification",
-];
 
-const explainDistractor = (choice: string, topic: Topic): string => {
-  const concept = topic.concept.toLowerCase();
+const chooseDistractors = (topics: Topic[], topicIndex: number, difficultyIndex: number, used: Set<string>): Topic[] => {
+  const candidates = topics.filter((_, index) => index !== topicIndex);
+  const combinations: Topic[][] = [];
 
-  switch (choice) {
-    case distractors[0]:
-      return `An undocumented workaround is not repeatable or auditable, and the missing owner leaves nobody accountable for maintaining it. It substitutes an informal bypass for actually applying ${concept}.`;
-    case distractors[1]:
-      return `Broadening access or exposure increases privilege and attack surface for the sake of convenience. That adds risk instead of using ${concept} to control the stated condition.`;
-    case distractors[2]:
-      return `Disabling monitoring removes the telemetry needed to detect failure, investigate misuse, and prove what happened. It weakens evidence and oversight without addressing ${concept}.`;
-    case distractors[3]:
-      return `Deferring the decision leaves the condition untreated and creates no owner, deadline, or risk record. A defensible ${concept} decision must be documented and tracked to completion.`;
-    case distractors[4]:
-      return `A single control can be misconfigured, bypassed, or become ineffective over time. Assuming it is sufficient skips the verification needed to show that ${concept} is working in this situation.`;
-    default:
-      return `“${choice}” does not resolve the stated condition. The stronger response is to ${topic.correct.charAt(0).toLowerCase()}${topic.correct.slice(1)}.`;
+  for (let first = 0; first < candidates.length - 2; first += 1) {
+    for (let second = first + 1; second < candidates.length - 1; second += 1) {
+      for (let third = second + 1; third < candidates.length; third += 1) {
+        combinations.push([candidates[first], candidates[second], candidates[third]]);
+      }
+    }
   }
+
+  const circularDistance = (candidate: Topic) => {
+    const candidateIndex = topics.indexOf(candidate);
+    return Math.abs(candidateIndex - topicIndex);
+  };
+
+  combinations.sort((left, right) => {
+    const leftDistance = left.reduce((total, candidate) => total + circularDistance(candidate), 0);
+    const rightDistance = right.reduce((total, candidate) => total + circularDistance(candidate), 0);
+    if (leftDistance !== rightDistance) return leftDistance - rightDistance;
+    const leftTieBreaker = left.reduce((total, candidate) => total + topics.indexOf(candidate), difficultyIndex);
+    const rightTieBreaker = right.reduce((total, candidate) => total + topics.indexOf(candidate), difficultyIndex);
+    return leftTieBreaker - rightTieBreaker;
+  });
+
+  for (const selection of combinations) {
+    const signature = selection.map((candidate) => candidate.correct).sort().join("|");
+    if (!used.has(signature)) {
+      used.add(signature);
+      return selection;
+    }
+  }
+
+  throw new Error("Unable to create a unique distractor set");
 };
 
-const prompts: Record<Difficulty, (topic: Topic) => string> = {
-  green: (topic) => `Which statement BEST describes ${topic.concept}?`,
-  orange: (topic) => `While ${topic.context}, which approach should an analyst recommend FIRST?`,
-  red: (topic) => `During a high-impact decision involving ${topic.concept}, which option provides the MOST defensible security outcome?`,
+const explainDistractor = (distractor: Topic, topic: Topic): string =>
+  `This is a valid response when the issue is ${distractor.concept.toLowerCase()}, but this scenario is testing ${topic.concept.toLowerCase()}. It would not directly resolve the stated condition; here the analyst should ${topic.correct.charAt(0).toLowerCase()}${topic.correct.slice(1)}.`;
+
+const capitalize = (value: string) => `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
+
+const promptTemplates: Record<Difficulty, ((topic: Topic) => string)[]> = {
+  green: [
+    (topic) => `Which statement best describes ${topic.concept}?`,
+    (topic) => `What is the primary security purpose of ${topic.concept}?`,
+    (topic) => `A junior analyst asks how ${topic.concept} should be applied. Which answer is most accurate?`,
+    (topic) => `${capitalize(topic.context)}. Which response correctly applies ${topic.concept}?`,
+  ],
+  orange: [
+    (topic) => `${capitalize(topic.context)}. What should the analyst do first?`,
+    (topic) => `Scenario: ${capitalize(topic.context)}. Which response is most appropriate?`,
+    (topic) => `${capitalize(topic.context)}. Which action would produce the strongest technical evidence?`,
+    (topic) => `${capitalize(topic.context)}. Which step best applies ${topic.concept.toLowerCase()}?`,
+    (topic) => `Investigation context: ${capitalize(topic.context)}. What is the most useful next action?`,
+  ],
+  red: [
+    (topic) => `${capitalize(topic.context)}. Which approach remains most defensible under technical scrutiny?`,
+    (topic) => `A senior analyst must make a high-impact decision about ${topic.concept}. Which option best preserves evidence and reduces uncertainty?`,
+    (topic) => `The initial response was inconclusive. ${capitalize(topic.context)}. What should the team do next?`,
+    (topic) => `${capitalize(topic.context)}. Which advanced approach handles the condition without weakening security assurance?`,
+    (topic) => `${capitalize(topic.context)}. Assume the obvious control is incomplete; which response best validates the actual condition?`,
+  ],
 };
 
-export const questionBank: QuizQuestion[] = Object.entries(catalog).flatMap(([domain, topics]) =>
-  topics.flatMap((topic, topicIndex) => (["green", "orange", "red"] as Difficulty[]).map((difficulty, difficultyIndex) => {
+export const questionBank: QuizQuestion[] = Object.entries(catalog).flatMap(([domain, topics]) => {
+  const usedDistractorSets: Record<Difficulty, Set<string>> = {
+    green: new Set<string>(),
+    orange: new Set<string>(),
+    red: new Set<string>(),
+  };
+  return topics.flatMap((topic, topicIndex) => (["green", "orange", "red"] as Difficulty[]).map((difficulty, difficultyIndex) => {
     const correctIndex = (topicIndex + difficultyIndex) % 4;
-    const wrong = [0, 1, 2].map((offset) => distractors[(topicIndex + offset) % distractors.length]);
-    const choices = [...wrong];
-    choices.splice(correctIndex, 0, topic.correct);
+    const wrongTopics = chooseDistractors(topics, topicIndex, difficultyIndex, usedDistractorSets[difficulty]);
+    const choices: { text: string; source: Topic }[] = wrongTopics.map((source) => ({ text: source.correct, source }));
+    choices.splice(correctIndex, 0, { text: topic.correct, source: topic });
     const correctAnswer = ids[correctIndex];
     return {
       id: `${domain}-${topicIndex + 1}-${difficulty}`,
       domain: domain as SecurityDomain,
       difficulty,
-      question: prompts[difficulty](topic),
-      answers: ids.map((id, index) => ({ id, text: choices[index] })),
+      question: promptTemplates[difficulty][(topicIndex + difficultyIndex) % promptTemplates[difficulty].length](topic),
+      answers: ids.map((id, index) => ({ id, text: choices[index].text })),
       correctAnswer,
       explanation: `${topic.correct}. This directly addresses ${topic.concept.toLowerCase()} in the stated situation while preserving accountability and evidence.`,
-      answerExplanations: Object.fromEntries(ids.map((id, index) => [id, index === correctIndex ? `This is the best answer because it applies ${topic.concept.toLowerCase()} directly.` : explainDistractor(choices[index], topic)])) as Record<AnswerId, string>,
+      answerExplanations: Object.fromEntries(ids.map((id, index) => [id, index === correctIndex ? `This is the best answer because it applies ${topic.concept.toLowerCase()} directly.` : explainDistractor(choices[index].source, topic)])) as Record<AnswerId, string>,
       keyConcept: topic.concept,
     };
-  })),
-);
+  }));
+});
