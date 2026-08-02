@@ -7,6 +7,7 @@ import KevTable from "./KevTable";
 import NewsFeed from "./NewsFeed";
 import ThreatMap from "./ThreatMap";
 import ThreatWeatherPanel from "./ThreatWeatherPanel";
+import TrainingGrounds from "./TrainingGrounds";
 
 type KevVulnerability = {
   cveID: string;
@@ -37,6 +38,7 @@ export default function DashboardTabs({ kevData }: { kevData: KevData }) {
     { id: "impact", label: "Impact Chain" },
     { id: "cooler-talk", label: "Cooler Talk" },
     { id: "kev", label: "Exploited CVEs" },
+    { id: "training", label: "Training Grounds" },
   ];
 
   return (
@@ -92,6 +94,7 @@ export default function DashboardTabs({ kevData }: { kevData: KevData }) {
         {tab === "threat-map" && <ThreatMap />}
         {tab === "impact" && <ImpactChain />}
         {tab === "cooler-talk" && <CoolerTalk />}
+        {tab === "training" && <TrainingGrounds />}
       </div>
     </section>
   );

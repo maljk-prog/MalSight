@@ -182,6 +182,13 @@ export default function ThreatMap() {
           <p className="text-sm font-bold tracking-[0.3em] text-[#3F6B5A]">
             GLOBAL THREAT MAP
           </p>
+          <p className="mt-3 max-w-3xl text-sm font-semibold leading-relaxed text-[#466357]">
+            Every pulse on this map begins with publicly available
+            intelligence. Behind the scenes, we&apos;re gathering reports from
+            multiple security feeds, enriching IPs with geographic context,
+            and organizing the data into a clearer picture of today&apos;s global
+            activity.
+          </p>
           <h2 className="mt-2 text-3xl font-black">
             {activeTimeframe.title} public attack heatmap
           </h2>
@@ -287,16 +294,11 @@ export default function ThreatMap() {
               countries={countries}
             />
 
-            <p className="mt-3 text-sm font-semibold text-[#466357]">
-              Drag to rotate the earth and scroll to zoom. Hotspots and moving
-              pulses are derived from the same enriched public-feed source IPs
-              listed below. Pulses show observed source activity, not invented
-              source-to-destination routes. Headline totals include every
-              record loaded from the available feeds; map markers require a
-              successful GeoIP lookup.
-            </p>
-
-            <div className="mt-4 rounded-xl border border-[#D6C89B]/60 bg-[#FFF3B0]/20 p-3 text-xs font-semibold leading-relaxed text-[#5B4B22]">
+            <details className="mt-4 rounded-xl border border-[#8DA99B]/60 bg-white/45 text-sm text-[#466357]">
+              <summary className="cursor-pointer list-none px-4 py-3 font-black text-[#3F6B5A]">
+                More information about this map
+              </summary>
+              <div className="border-t border-[#8DA99B]/40 p-4 text-xs font-semibold leading-relaxed">
               <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
                 <p>{data?.source}</p>
                 <p>{data?.telemetryWindow}</p>
@@ -333,7 +335,8 @@ export default function ThreatMap() {
                   ))}
                 </div>
               )}
-            </div>
+              </div>
+            </details>
           </>
         )}
       </div>

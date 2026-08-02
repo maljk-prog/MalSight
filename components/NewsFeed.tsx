@@ -11,6 +11,7 @@ type NewsItem = {
   contentSnippet: string;
   cves?: string[];
   cveSource?: "rss" | "article" | "kev" | "none";
+  cveCheckStatus?: "full-article" | "feed-only";
 };
 
 type NewsResponse = {
@@ -507,11 +508,13 @@ function Pill({ children }: { children: React.ReactNode }) {
 function CveLinks({
   cves,
   onSelectCve,
+  emptyLabel = "No CVE found in available text",
 }: {
   cves: string[];
   onSelectCve: (cve: string) => void;
+  emptyLabel?: string;
 }) {
-  if (!cves.length) return <span>No CVE identified</span>;
+  if (!cves.length) return <span>{emptyLabel}</span>;
 
   return (
     <span className="inline-flex flex-wrap gap-2 align-middle">
@@ -521,7 +524,7 @@ function CveLinks({
           type="button"
           onClick={() => onSelectCve(cve)}
           className="rounded-full border border-[#3F6B5A]/55 bg-white/65 px-2.5 py-1 text-xs font-black text-[#3F6B5A] underline-offset-2 transition hover:bg-white hover:underline"
-          title={`Open ${cve} in Exploited CVEs`}
+          title={`Check whether ${cve} is in CISA KEV`}
         >
           {cve}
         </button>
@@ -546,6 +549,20 @@ function cveSourceLabel(source?: NewsItem["cveSource"]) {
   if (source === "article") return "source article";
   if (source === "kev") return "CISA KEV match";
   return "not found in RSS or source page";
+}
+
+function noCveLabel(item: NewsItem) {
+  return item.cveCheckStatus === "full-article"
+    ? "No CVE found in retrieved full article"
+    : "No CVE found in RSS excerpt; full-article check unavailable";
+}
+
+function clusterNoCveLabel(cluster: StoryCluster) {
+  return cluster.articles.every(
+    ({ item }) => item.cveCheckStatus === "full-article",
+  )
+    ? "No CVE found in retrieved article text"
+    : "No CVE found in available text; some full-article checks unavailable";
 }
 
 function editorialHeadline(cluster: StoryCluster) {
@@ -858,7 +875,12 @@ export default function NewsFeed({
                       {cluster.entities.length ? cluster.entities.join(", ") : "None identified"}
                     </p>
                     <p>
-                      <b>CVEs:</b> <CveLinks cves={cluster.cves} onSelectCve={onSelectCve} />
+                      <b>CVEs:</b>{" "}
+                      <CveLinks
+                        cves={cluster.cves}
+                        onSelectCve={onSelectCve}
+                        emptyLabel={clusterNoCveLabel(cluster)}
+                      />
                     </p>
                     <p><b>Affected sector:</b> {cluster.sector}</p>
                     <p><b>Tags:</b> {cluster.categories.join(", ")}</p>
@@ -884,7 +906,7 @@ export default function NewsFeed({
                           {analysis.categories.join(", ")}
                         </p>
                         <p className="mt-1 text-xs font-bold text-[#466357]">
-                          CVEs: {analysis.cves.length ? analysis.cves.join(", ") : "No CVE identified"} / source:{" "}
+                          CVEs: {analysis.cves.length ? analysis.cves.join(", ") : noCveLabel(item)} / source:{" "}
                           {cveSourceLabel(item.cveSource)}
                         </p>
                       </a>
@@ -959,7 +981,12 @@ export default function NewsFeed({
                 </p>
                 <div className="mt-4 grid gap-2 text-sm font-semibold text-[#466357] md:grid-cols-2">
                   <p>
-                    CVEs: <CveLinks cves={analysis.cves} onSelectCve={onSelectCve} />
+                    CVEs:{" "}
+                    <CveLinks
+                      cves={analysis.cves}
+                      onSelectCve={onSelectCve}
+                      emptyLabel={noCveLabel(item)}
+                    />
                   </p>
                   <p>CVE source: {cveSourceLabel(item.cveSource)}</p>
                   <p>Sector: {analysis.sector}</p>

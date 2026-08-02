@@ -21,6 +21,7 @@ type EnrichedSource = Observation & {
 
 const DAY_SECONDS = 86400;
 const FETCH_TIMEOUT_MS = 8000;
+const MAP_SOURCE_LIMIT = 150;
 const IPV4_RE = /^(?:\d{1,3}\.){3}\d{1,3}$/;
 
 function dateDaysAgo(daysAgo: number) {
@@ -191,6 +192,8 @@ export async function GET(request: Request) {
     fetchPlainFeed("Emerging Threats", "Compromised Host", "https://rules.emergingthreats.net/blockrules/compromised-ips.txt"),
     fetchPlainFeed("blocklist.de", "Abuse Activity", "https://lists.blocklist.de/lists/all.txt"),
     fetchFeodo(),
+    fetchPlainFeed("CINS Army", "Malicious Activity", "https://cinsscore.com/list/ci-badguys.txt"),
+    fetchPlainFeed("abuseip.org", "Web Exploitation", "https://www.abuseip.org/blocklist.txt"),
   ]);
   const loadedObservations = providers.flatMap((provider) => provider.observations);
   const mergedObservations = merge(providers);
@@ -200,7 +203,7 @@ export async function GET(request: Request) {
     summary.reports += item.reports;
     return summary;
   }, { observations: 0, uniqueIps: mergedObservations.size, attacks: 0, reports: 0 });
-  const enriched = (await Promise.all(selectBalanced(providers).map(geolocate)))
+  const enriched = (await Promise.all(selectBalanced(providers, MAP_SOURCE_LIMIT).map(geolocate)))
     .filter((item): item is EnrichedSource => Boolean(item))
     .sort((a, b) => b.providers.length - a.providers.length || b.attacks - a.attacks);
   const dshieldDates = providers[0].dates;

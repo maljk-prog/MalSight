@@ -15,6 +15,9 @@ type NewsItem = {
   pubDate: string;
   timestamp: number;
   contentSnippet: string;
+  cves: string[];
+  cveSource: "rss" | "article" | "none";
+  cveCheckStatus: "full-article" | "feed-only";
 };
 
 const SOURCES: FeedSource[] = [
@@ -41,6 +44,15 @@ const SOURCES: FeedSource[] = [
 ];
 
 const parser = new Parser();
+const CVE_PATTERN = /CVE-\d{4}-\d{4,7}/gi;
+const ARTICLE_FETCH_TIMEOUT_MS = 7000;
+const ARTICLE_CONCURRENCY = 8;
+
+function extractCves(text: string) {
+  return Array.from(
+    new Set((text.match(CVE_PATTERN) || []).map((cve) => cve.toUpperCase())),
+  );
+}
 
 function normalizeUrl(value?: string) {
   if (!value) return null;
@@ -81,7 +93,7 @@ async function readFeed(source: FeedSource): Promise<NewsItem[]> {
   const feed = await parser.parseURL(source.feed);
 
   return feed.items
-    .map((item) => {
+    .map((item): NewsItem | null => {
       const link = normalizeUrl(item.link || item.guid);
 
       if (!link || !isArticleLink(link, source) || !item.title) {
@@ -89,6 +101,16 @@ async function readFeed(source: FeedSource): Promise<NewsItem[]> {
       }
 
       const timestamp = toTimestamp(item.isoDate || item.pubDate);
+      const contentSnippet =
+        item.contentSnippet?.replace(/\s+/g, " ").trim() ||
+        "Open the original report for full details.";
+      const rssText = [
+        item.title,
+        contentSnippet,
+        item.content,
+        item.summary,
+      ].filter(Boolean).join(" ");
+      const cves = extractCves(rssText);
 
       return {
         source: source.name,
@@ -102,19 +124,74 @@ async function readFeed(source: FeedSource): Promise<NewsItem[]> {
             }).format(timestamp)
           : "Recent",
         timestamp,
-        contentSnippet:
-          item.contentSnippet?.replace(/\s+/g, " ").trim() ||
-          "Open the original report for full details.",
+        contentSnippet,
+        cves,
+        cveSource: cves.length ? "rss" as const : "none" as const,
+        cveCheckStatus: "feed-only" as const,
       };
     })
     .filter((item): item is NewsItem => Boolean(item));
+}
+
+function articleRelevantHtml(html: string) {
+  const articleSections = html.match(/<article\b[^>]*>[\s\S]*?<\/article>/gi);
+  if (articleSections?.length) return articleSections.join(" ");
+
+  const metadata = [
+    ...html.matchAll(
+      /<meta\b[^>]*(?:name|property)=["'](?:description|og:description)["'][^>]*content=["']([^"']*)["'][^>]*>/gi,
+    ),
+    ...html.matchAll(
+      /<meta\b[^>]*content=["']([^"']*)["'][^>]*(?:name|property)=["'](?:description|og:description)["'][^>]*>/gi,
+    ),
+  ].map((match) => match[1]);
+  const articleBodies = Array.from(
+    html.matchAll(/"articleBody"\s*:\s*"((?:\\.|[^"\\])*)"/gi),
+    (match) => match[1],
+  );
+
+  return [...metadata, ...articleBodies].join(" ");
+}
+
+async function inspectArticle(item: NewsItem): Promise<NewsItem> {
+  try {
+    const response = await fetch(item.link, {
+      headers: {
+        Accept: "text/html,application/xhtml+xml",
+        "User-Agent": "MalSight breach news CVE verifier contact: github.com/maljk-prog/MalSight",
+      },
+      signal: AbortSignal.timeout(ARTICLE_FETCH_TIMEOUT_MS),
+      next: { revalidate: 86400 },
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const articleCves = extractCves(articleRelevantHtml(await response.text()));
+    const cves = Array.from(new Set([...item.cves, ...articleCves]));
+    return {
+      ...item,
+      cves,
+      cveSource: articleCves.length ? "article" : item.cveSource,
+      cveCheckStatus: "full-article",
+    };
+  } catch {
+    return item;
+  }
+}
+
+async function inspectArticles(items: NewsItem[]) {
+  const enriched: NewsItem[] = [];
+  for (let index = 0; index < items.length; index += ARTICLE_CONCURRENCY) {
+    const batch = items.slice(index, index + ARTICLE_CONCURRENCY);
+    enriched.push(...await Promise.all(batch.map(inspectArticle)));
+  }
+  return enriched;
 }
 
 export async function GET() {
   const settled = await Promise.allSettled(SOURCES.map(readFeed));
   const seen = new Set<string>();
 
-  const items = settled
+  const candidates = settled
     .flatMap((result) => (result.status === "fulfilled" ? result.value : []))
     .filter((item) => {
       if (seen.has(item.link)) return false;
@@ -123,6 +200,7 @@ export async function GET() {
     })
     .sort((a, b) => b.timestamp - a.timestamp)
     .slice(0, 40);
+  const items = await inspectArticles(candidates);
 
   return Response.json({
     updatedAt: new Date().toISOString(),

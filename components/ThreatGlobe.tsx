@@ -176,6 +176,8 @@ function signalColor(source: GlobeSource, palette: Palette) {
   if (category === "Compromised Host") return "#F4B942";
   if (category === "Abuse Activity") return "#C084FC";
   if (category === "Scanning") return "#73E2A7";
+  if (category === "Malicious Activity") return "#38BDF8";
+  if (category === "Web Exploitation") return "#FB7185";
   return palette.warm;
 }
 

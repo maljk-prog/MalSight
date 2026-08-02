@@ -94,6 +94,8 @@ export default function KevTable({
     setSelectedLetter("Top 15");
   }, [selectedCve]);
   const normalizedKeyword = keyword.trim().toLowerCase();
+  const searchedCve =
+    keyword.trim().toUpperCase().match(/^CVE-\d{4}-\d{4,7}$/)?.[0] || "";
   const matchingVulnerabilities = useMemo(() => {
     if (!normalizedKeyword) return vulnerabilities;
 
@@ -221,7 +223,7 @@ export default function KevTable({
           </label>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        {!normalizedKeyword && <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => {
@@ -269,7 +271,7 @@ export default function KevTable({
               {letter}
             </button>
           ))}
-        </div>
+        </div>}
 
         <p className="mt-3 text-sm font-semibold text-[#466357]">
           Showing {visibleVendorGroups.length} vendors and{" "}
@@ -297,7 +299,39 @@ export default function KevTable({
       <div className="space-y-4 rounded-2xl border border-[#8DA99B]/50 bg-white/50 p-4">
         {visibleVendorGroups.length === 0 && (
           <div className="rounded-2xl bg-[#E6E4DE] p-5 text-[#466357]">
-            No exploited CVEs match that keyword.
+            {searchedCve ? (
+              <>
+                <p className="font-black text-[#243B32]">
+                  {searchedCve} is not currently in the CISA Known Exploited
+                  Vulnerabilities catalog.
+                </p>
+                <p className="mt-2">
+                  This does not mean the CVE is invalid. It means CISA KEV—the
+                  dataset used by this panel—does not currently list it as
+                  known to be exploited in the wild.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <a
+                    href={`https://nvd.nist.gov/vuln/detail/${searchedCve}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-xl bg-[#3F6B5A] px-4 py-2 text-sm font-bold text-white"
+                  >
+                    Open NVD record
+                  </a>
+                  <a
+                    href={`https://www.cve.org/CVERecord?id=${searchedCve}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-xl border border-[#3F6B5A] px-4 py-2 text-sm font-bold text-[#3F6B5A]"
+                  >
+                    Open CVE record
+                  </a>
+                </div>
+              </>
+            ) : (
+              "No CISA KEV entries match that keyword."
+            )}
           </div>
         )}
 
