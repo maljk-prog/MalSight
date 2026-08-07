@@ -193,8 +193,8 @@ export default function ThreatWeatherPanel() {
   }
 
   return (
-    <section className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
-      <article className="relative min-h-[520px] overflow-hidden rounded-2xl bg-[#13231D] text-[#F5F4EF] shadow-xl shadow-[#13231D]/25">
+    <section className="grid items-start gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+      <article className="relative h-[520px] self-start overflow-hidden rounded-2xl bg-[#13231D] text-[#F5F4EF] shadow-xl shadow-[#13231D]/25 lg:sticky lg:top-4 lg:h-[560px]">
         <div
           className="absolute -inset-2 bg-cover opacity-75"
           style={{
@@ -205,7 +205,7 @@ export default function ThreatWeatherPanel() {
           }}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-[#08120F]/25 via-[#08120F]/45 to-[#08120F]/88" />
-        <div className="relative z-10 flex min-h-[520px] flex-col justify-between p-5 sm:p-6">
+        <div className="relative z-10 flex h-full flex-col justify-between p-5 sm:p-6">
           <div>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
