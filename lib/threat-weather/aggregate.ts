@@ -23,7 +23,7 @@ const SIGNAL_LABELS: Record<ThreatSignalName, string> = {
   phishingActivity: "Phishing activity",
   malwareSubmissions: "Malware submissions",
   internetScanning: "Internet scanning",
-  publicConcern: "Public concern",
+  publicConcern: "Public concern (Cooler Talk)",
 };
 
 const SIGNAL_NOTES: Record<ThreatSignalName, string> = {
@@ -33,7 +33,7 @@ const SIGNAL_NOTES: Record<ThreatSignalName, string> = {
   phishingActivity: "URL/domain indicators categorized as phishing by configured sources.",
   malwareSubmissions: "Malware-linked hashes, URLs, or families returned by configured sources.",
   internetScanning: "Public source-IP telemetry and scan reports from configured sources.",
-  publicConcern: "Search or public concern signal when a validated MalSight source is available.",
+  publicConcern: "The live Public Concern Index shared with Cooler Talk, scored from security-focused public-interest and news signals.",
 };
 
 const SIGNAL_WEIGHTS: Record<ThreatSignalName, number> = {

@@ -1001,7 +1001,7 @@ function panicMeter(items: ScoredTrendEntry[]) {
   };
 }
 
-export async function GET() {
+export async function getCoolerTalkData() {
   try {
     const [items, cyberTopicItems, panicTopicItems] = await Promise.all([
       fetchTrendItems(),
@@ -1009,14 +1009,14 @@ export async function GET() {
       fetchPanicTopicItems(),
     ]);
 
-    return Response.json({
+    return {
       updatedAt: new Date().toISOString(),
       fastestRising: await fetchFastestCyberTrend(items, cyberTopicItems),
       panic: panicMeter(items.concat(panicTopicItems)),
       mysteryTopic: MYSTERY_TOPICS[weeklyIndex()],
-    });
+    };
   } catch {
-    return Response.json({
+    return {
       updatedAt: new Date().toISOString(),
       fastestRising: null,
       panic: {
@@ -1027,6 +1027,10 @@ export async function GET() {
         matchedSearches: [],
       },
       mysteryTopic: MYSTERY_TOPICS[weeklyIndex()],
-    });
+    };
   }
+}
+
+export async function GET() {
+  return Response.json(await getCoolerTalkData());
 }

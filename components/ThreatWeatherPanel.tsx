@@ -194,7 +194,8 @@ export default function ThreatWeatherPanel() {
 
   return (
     <section className="grid items-start gap-4 lg:grid-cols-[1.05fr_0.95fr]">
-      <article className="relative h-[520px] self-start overflow-hidden rounded-2xl bg-[#13231D] text-[#F5F4EF] shadow-xl shadow-[#13231D]/25 lg:sticky lg:top-4 lg:h-[560px]">
+      <div className="space-y-4">
+      <article className="relative h-[520px] self-start overflow-hidden rounded-2xl bg-[#13231D] text-[#F5F4EF] shadow-xl shadow-[#13231D]/25 lg:h-[560px]">
         <div
           className="absolute -inset-2 bg-cover opacity-75"
           style={{
@@ -262,6 +263,37 @@ export default function ThreatWeatherPanel() {
           </div>
         </div>
       </article>
+
+      <article className="theme-home-panel rounded-2xl border border-[#8DA99B]/50 bg-white/55 p-5 sm:p-6">
+        <p className="text-sm font-black tracking-[0.24em] text-[#3F6B5A]">
+          THREAT INDEX SIGNALS
+        </p>
+        <h3 className="mt-2 text-2xl font-black text-[#243B32]">
+          What is shaping today&apos;s score
+        </h3>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          {data.contributors.map((signal) => (
+            <div key={signal.name} className="rounded-xl border border-[#8DA99B]/40 bg-[#E6E4DE]/55 p-3">
+              <div className="flex items-center justify-between gap-3 text-xs font-bold text-[#466357]">
+                <span>{signal.label}</span>
+                <span className="text-sm font-black text-[#243B32]">{formatNumber(signal.value)}</span>
+              </div>
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#E6E4DE]">
+                <div className="h-full rounded-full bg-[#3F6B5A]" style={{ width: signalWidth(signal.score) }} />
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className="mt-5 border-t border-[#8DA99B]/40 pt-4 text-sm font-semibold text-[#466357]">
+          Baseline timeframe:{" "}
+          <span className="font-black text-[#243B32]">
+            {data.iocCollector.deltas.available
+              ? "Compared to prior validated collection"
+              : "Current live 24-hour window; prior-day comparison needs persisted history"}
+          </span>
+        </p>
+      </article>
+      </div>
 
       <article className="theme-home-panel rounded-2xl border border-[#8DA99B]/50 bg-white/55 p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -357,31 +389,6 @@ export default function ThreatWeatherPanel() {
           )}
         </div>
 
-        <div className="mt-5 grid gap-3">
-          {data.contributors.map((signal) => (
-            <div key={signal.name}>
-              <div className="flex items-center justify-between gap-3 text-xs font-bold text-[#466357]">
-                <span>{signal.label}</span>
-                <span>{formatNumber(signal.value)}</span>
-              </div>
-              <div className="mt-1 h-2 overflow-hidden rounded-full bg-[#E6E4DE]">
-                <div
-                  className="h-full rounded-full bg-[#3F6B5A]"
-                  style={{ width: signalWidth(signal.score) }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <p className="mt-5 text-sm font-semibold text-[#466357]">
-          Baseline timeframe:{" "}
-          <span className="font-black text-[#243B32]">
-            {data.iocCollector.deltas.available
-              ? "Compared to prior validated collection"
-              : "Current live 24-hour window; prior-day comparison needs persisted history"}
-          </span>
-        </p>
       </article>
     </section>
   );

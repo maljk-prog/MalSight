@@ -2281,6 +2281,9 @@ body {
 
 /* One consistent, theme-aware introduction panel for every dashboard view. */
 .dashboard-view-hero {
+  --view-hero-dark: color-mix(in srgb, var(--theme-deep-panel) 88%, black);
+  --view-hero-darker: color-mix(in srgb, var(--theme-deep-panel) 68%, black);
+  --view-hero-trim: color-mix(in srgb, var(--theme-accent-strong) 64%, black);
   position: relative;
   display: flex;
   min-height: 230px;
@@ -2292,10 +2295,8 @@ body {
   border: 1px solid color-mix(in srgb, var(--theme-border) 72%, transparent);
   border-radius: 22px;
   padding: 30px;
-  background:
-    linear-gradient(90deg, transparent 49.5%, #ffffff08 50%, transparent 50.5%) 0 0/46px 46px,
-    linear-gradient(#ffffff06 49.5%, transparent 50%) 0 0/46px 46px,
-    linear-gradient(135deg, var(--room-mid), var(--room-dark));
+  background-color: var(--view-hero-darker);
+  background-image: linear-gradient(135deg, var(--view-hero-dark), var(--view-hero-darker));
   color: var(--theme-deep-text);
   box-shadow: 0 16px 30px color-mix(in srgb, var(--theme-shadow) 24%, transparent);
 }
@@ -2305,9 +2306,19 @@ body {
   bottom: 0;
   left: 0;
   height: 5px;
-  background: repeating-linear-gradient(90deg, var(--room-trim) 0 30px, color-mix(in srgb, var(--room-trim) 75%, var(--room-border)) 30px 60px);
+  background: repeating-linear-gradient(90deg, var(--view-hero-trim) 0 30px, color-mix(in srgb, var(--view-hero-trim) 68%, var(--theme-border)) 30px 60px);
   content: "";
   opacity: .72;
+}
+.dashboard-view-hero::before {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(90deg, transparent 49%, rgb(255 255 255 / 3%) 50%, transparent 51%),
+    linear-gradient(transparent 49%, rgb(255 255 255 / 2%) 50%, transparent 51%);
+  background-size: 46px 46px;
+  content: "";
+  pointer-events: none;
 }
 .dashboard-view-hero-copy { position: relative; z-index: 1; max-width: 48rem; }
 .dashboard-view-hero-eyebrow { color: color-mix(in srgb, var(--theme-warm) 72%, var(--theme-deep-text)); font-size: .78rem; font-weight: 900; letter-spacing: .26em; text-transform: uppercase; }
@@ -2315,7 +2326,7 @@ body {
 .dashboard-view-hero-description { margin-top: .8rem; max-width: 42rem; color: var(--theme-deep-muted); font-size: .95rem; font-weight: 600; line-height: 1.65; }
 .dashboard-view-hero-aside { position: relative; z-index: 1; flex: 0 0 auto; color: var(--theme-deep-text); }
 .dashboard-view-hero-aside p { color: var(--theme-deep-muted) !important; }
-.dashboard-view-hero-aside > .grid > div { border: 1px solid color-mix(in srgb, var(--theme-deep-muted) 32%, transparent); background: color-mix(in srgb, var(--room-dark) 72%, transparent); color: var(--theme-deep-text); }
+.dashboard-view-hero-aside > .grid > div { border: 1px solid color-mix(in srgb, var(--theme-deep-muted) 32%, transparent); background: color-mix(in srgb, var(--view-hero-darker) 78%, transparent); color: var(--theme-deep-text); }
 @media(max-width:800px){.dashboard-view-hero{min-height:210px;align-items:flex-start;flex-direction:column;border-radius:18px;padding:26px 20px 32px}.dashboard-view-hero-aside{width:100%}}
 
 /* Intrusion Analysis extends the existing Training Grounds visual system. */
