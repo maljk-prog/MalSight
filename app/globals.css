@@ -2327,16 +2327,44 @@ body {
 .dashboard-view-hero-aside { position: relative; z-index: 1; flex: 0 0 auto; color: var(--theme-deep-text); }
 .dashboard-view-hero-aside p { color: var(--theme-deep-muted) !important; }
 .dashboard-view-hero-aside > .grid > div { border: 1px solid color-mix(in srgb, var(--theme-deep-muted) 32%, transparent); background: color-mix(in srgb, var(--view-hero-darker) 78%, transparent); color: var(--theme-deep-text); }
+.dashboard-view-hero-aside > .grid > div {
+  border-color: color-mix(in srgb, var(--theme-deep-muted) 45%, transparent);
+  background: color-mix(in srgb, var(--view-hero-dark) 92%, black);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 5%);
+}
+.dashboard-view-hero-aside > .grid > div > p:first-child {
+  color: color-mix(in srgb, var(--theme-deep-text) 88%, var(--theme-warm)) !important;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 28%);
+}
+.dashboard-view-hero-aside > .grid > div > p:last-child {
+  margin-top: .35rem;
+  color: color-mix(in srgb, var(--theme-deep-muted) 86%, var(--theme-deep-text)) !important;
+}
 @media(max-width:800px){.dashboard-view-hero{min-height:210px;align-items:flex-start;flex-direction:column;border-radius:18px;padding:26px 20px 32px}.dashboard-view-hero-aside{width:100%}}
 
 /* Intrusion Analysis extends the existing Training Grounds visual system. */
 .intrusion-tag { display:inline-flex; align-items:center; border:1px solid color-mix(in srgb,var(--theme-border) 72%,transparent); border-radius:999px; background:color-mix(in srgb,var(--theme-panel) 62%,transparent); padding:.35rem .65rem; color:var(--theme-muted); font-size:.66rem; font-weight:900; letter-spacing:.08em; }
 .intrusion-tag.is-discovered { border-color:color-mix(in srgb,var(--theme-accent) 58%,var(--theme-border)); background:color-mix(in srgb,var(--theme-accent) 12%,var(--theme-panel)); color:var(--theme-accent); }
 .intrusion-lives { color:#a85555; font-size:1.35rem; font-weight:900; letter-spacing:.12em; }
-.intrusion-evidence { border:1px solid color-mix(in srgb,var(--theme-border) 55%,transparent); border-radius:1rem; background:color-mix(in srgb,var(--theme-surface-soft) 62%,transparent); padding:1rem; color:var(--theme-text); }
-.intrusion-evidence time { color:var(--theme-muted); font-size:.7rem; font-weight:800; }
-.intrusion-evidence h4 { color:var(--theme-accent); font-size:.72rem; letter-spacing:.08em; text-transform:uppercase; }
-.intrusion-evidence code { display:block; margin-top:.55rem; overflow-wrap:anywhere; white-space:pre-wrap; color:var(--theme-muted); font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.76rem; line-height:1.6; }
+.intrusion-evidence { overflow:hidden; border:1px solid color-mix(in srgb,var(--theme-border) 62%,transparent); border-radius:1rem; background:color-mix(in srgb,var(--theme-surface-soft) 72%,transparent); color:var(--theme-text); box-shadow:0 8px 20px color-mix(in srgb,var(--theme-shadow) 9%,transparent); }
+.intrusion-evidence-header { display:flex; align-items:center; justify-content:space-between; gap:.75rem; border-bottom:1px solid color-mix(in srgb,var(--theme-border) 42%,transparent); padding:.7rem .85rem; }
+.intrusion-evidence-header > div { display:flex; align-items:center; gap:.6rem; }
+.intrusion-evidence-index { display:grid; width:1.65rem; height:1.65rem; place-items:center; border-radius:.5rem; background:color-mix(in srgb,var(--theme-accent) 14%,var(--theme-panel)); color:var(--theme-accent); font:900 .64rem/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+.intrusion-evidence time { color:var(--theme-muted); font-size:.66rem; font-weight:900; letter-spacing:.06em; }
+.intrusion-evidence-title { display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:.7rem .85rem .35rem; }
+.intrusion-evidence h4 { color:var(--theme-accent); font-size:.72rem; font-weight:900; letter-spacing:.08em; text-transform:uppercase; }
+.intrusion-evidence-title span { border:1px solid color-mix(in srgb,var(--theme-border) 55%,transparent); border-radius:999px; padding:.2rem .45rem; color:var(--theme-muted); font-size:.55rem; font-weight:900; letter-spacing:.08em; white-space:nowrap; }
+.intrusion-evidence-body { display:flex; gap:.55rem; margin:.35rem .85rem .85rem; border-radius:.7rem; background:color-mix(in srgb,var(--theme-panel) 72%,black); padding:.75rem; }
+.intrusion-evidence code { display:grid; min-width:0; gap:.35rem; overflow-wrap:anywhere; white-space:pre-wrap; color:var(--theme-muted); font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.76rem; line-height:1.55; }
+.intrusion-evidence code span + span { border-top:1px dashed color-mix(in srgb,var(--theme-border) 40%,transparent); padding-top:.35rem; }
+.intrusion-evidence.is-path .intrusion-evidence-body { border-left:3px solid var(--theme-accent); }
+.intrusion-terminal-bar { display:flex; align-items:center; gap:.3rem; margin:.4rem .85rem 0; border-radius:.7rem .7rem 0 0; background:color-mix(in srgb,var(--theme-deep-panel) 90%,black); padding:.48rem .65rem; }
+.intrusion-terminal-bar i { width:.42rem; height:.42rem; border-radius:50%; background:var(--theme-muted); opacity:.7; }
+.intrusion-terminal-bar i:first-child { background:#d36b67; }.intrusion-terminal-bar i:nth-child(2) { background:#d1a34d; }.intrusion-terminal-bar i:nth-child(3) { background:#69a574; }
+.intrusion-terminal-bar b { margin-left:.3rem; color:var(--theme-deep-muted); font:800 .6rem/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; letter-spacing:.05em; }
+.intrusion-evidence.is-terminal .intrusion-evidence-body { margin-top:0; border-radius:0 0 .7rem .7rem; background:color-mix(in srgb,var(--theme-deep-panel) 84%,black); }
+.intrusion-evidence.is-terminal code { color:var(--theme-deep-muted); }
+.intrusion-prompt { color:color-mix(in srgb,var(--theme-warm) 74%,var(--theme-deep-text)); font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-weight:900; }
 .intrusion-path { display:flex; gap:.55rem; overflow-x:auto; overscroll-behavior-x:contain; scroll-snap-type:x proximity; cursor:grab; touch-action:pan-x; padding:.15rem .1rem .65rem; scrollbar-color:var(--theme-accent) color-mix(in srgb,var(--theme-border) 24%,transparent); }
 .intrusion-path:active { cursor:grabbing; }
 .intrusion-path-step { position:relative; min-width:150px; flex:1; border:1px dashed color-mix(in srgb,var(--theme-border) 62%,transparent); border-radius:.9rem; background:color-mix(in srgb,var(--theme-panel) 45%,transparent); padding:.8rem; color:var(--theme-muted); }

@@ -196,7 +196,7 @@ export default function ThreatMap() {
             ))}
           </div>
 
-          <div className="grid grid-cols-3 gap-3 text-center text-sm font-semibold text-[#243B32]">
+          <div className="dashboard-view-hero-stats grid grid-cols-3 gap-3 text-center text-sm font-semibold">
             <div className="rounded-2xl bg-white/60 p-3 [container-type:inline-size]">
               <p className="text-[clamp(1.05rem,20cqw,1.75rem)] font-black leading-none">
                 {formatNumber(data?.totals?.observations || 0)}
