@@ -22,7 +22,7 @@ export type InvestigationStage = {
 };
 
 export type IntrusionCase = {
-  seed: number; caseId: string; fingerprint: string; difficulty: Difficulty;
+  seed: number; fingerprint: string; difficulty: Difficulty;
   environment: string; tags: string[]; title: string; assignment: string;
   artifacts: CaseArtifacts; stages: InvestigationStage[]; outcome: CaseOutcome;
 };

@@ -99,7 +99,7 @@ export default function IntrusionAnalysis({ onBack }: { onBack: () => void }) {
       <section className="training-card rounded-2xl p-6 sm:p-9">
         <p className="theme-kicker text-xs font-black tracking-[.28em]">FINAL CASE REPORT</p>
         <h2 className="theme-title mt-2 text-4xl font-black">{outcome}</h2>
-        <p className="theme-muted mt-2 font-bold">CASE #{caseData.caseId} · Seed {caseData.seed}</p>
+        <p className="theme-muted mt-2 font-bold">REPLAY SEED · {caseData.seed}</p>
         <div className="mt-6 grid gap-3 sm:grid-cols-3"><Metric label="ACCURACY" value={`${accuracy}%`}/><Metric label="LIVES REMAINING" value={`${"♥".repeat(lives)}${"♡".repeat(3-lives)}`}/><Metric label="BEST STREAK" value={`🔥 ${bestStreak}`}/></div>
         <MitrePath caseData={caseData} revealed={caseData.stages.length}/>
         <div className="mt-7 grid gap-4 lg:grid-cols-2">
@@ -126,7 +126,7 @@ export default function IntrusionAnalysis({ onBack }: { onBack: () => void }) {
   return <div className="training-shell space-y-5">
     <header className="training-header rounded-2xl p-5 sm:p-7">
       <button className="training-back mb-4" onClick={()=>setCaseData(null)}>← LEAVE CASE</button>
-      <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="theme-kicker text-xs font-black tracking-[.28em]">INTRUSION ANALYSIS · CASE #{caseData.caseId}</p><h2 className="theme-title mt-2 text-2xl font-black">{caseData.title}</h2><div className="mt-3 flex flex-wrap gap-2"><span className={`training-level is-${caseData.difficulty}`}>{caseData.difficulty.toUpperCase()}</span>{caseData.tags.map((tag)=><span className="intrusion-tag" key={tag}>{tag}</span>)}</div></div><div className="text-right"><p className="intrusion-lives" aria-label={`${lives} lives remaining`}>{"♥".repeat(lives)}{"♡".repeat(3-lives)}</p><p className="theme-muted mt-2 text-sm font-black">🔥 {streak} · BEST {bestStreak}</p></div></div>
+      <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="theme-kicker text-xs font-black tracking-[.28em]">INTRUSION ANALYSIS</p><h2 className="theme-title mt-2 text-2xl font-black">{caseData.title}</h2><div className="mt-3 flex flex-wrap gap-2"><span className={`training-level is-${caseData.difficulty}`}>{caseData.difficulty.toUpperCase()}</span>{caseData.tags.map((tag)=><span className="intrusion-tag" key={tag}>{tag}</span>)}</div></div><div className="text-right"><p className="intrusion-lives" aria-label={`${lives} lives remaining`}>{"♥".repeat(lives)}{"♡".repeat(3-lives)}</p><p className="theme-muted mt-2 text-sm font-black">🔥 {streak} · BEST {bestStreak}</p></div></div>
       <div className="training-progress mt-5"><span style={{width:`${((stageIndex+1)/caseData.stages.length)*100}%`}}/></div>
     </header>
     <MitrePath caseData={caseData} revealed={stageIndex+(selected?1:0)}/>
