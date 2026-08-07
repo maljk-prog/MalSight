@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import IpAbuseLookup from "./IpAbuseLookup";
 import ThreatGlobe from "./ThreatGlobe";
+import DashboardViewHero from "./DashboardViewHero";
 
 type CountrySummary = {
   country: string;
@@ -177,28 +178,7 @@ export default function ThreatMap() {
     TIMEFRAMES.find((item) => item.id === timeframe) || TIMEFRAMES[1];
   return (
     <div>
-      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
-          <p className="text-sm font-bold tracking-[0.3em] text-[#3F6B5A]">
-            GLOBAL THREAT MAP
-          </p>
-          <p className="mt-3 max-w-3xl text-sm font-semibold leading-relaxed text-[#466357]">
-            Every pulse on this map begins with publicly available
-            intelligence. Behind the scenes, we&apos;re gathering reports from
-            multiple security feeds, enriching IPs with geographic context,
-            and organizing the data into a clearer picture of today&apos;s global
-            activity.
-          </p>
-          <h2 className="mt-2 text-3xl font-black">
-            {activeTimeframe.title} public attack heatmap
-          </h2>
-          <p className="mt-2 max-w-3xl text-[#466357]">
-            Top globally reported source IPs from public intelligence feeds,
-            enriched with GeoIP and plotted on a real world atlas.
-          </p>
-        </div>
-
-        <div className="space-y-3">
+      <DashboardViewHero eyebrow="GLOBAL THREAT MAP · PUBLIC TELEMETRY" title={`${activeTimeframe.title} public attack heatmap`} description="Publicly reported source IPs from multiple security feeds, enriched with geographic context and plotted on a real-world atlas." aside={<div className="space-y-3">
           <div className="flex flex-wrap justify-start gap-2 md:justify-end">
             {TIMEFRAMES.map((item) => (
               <button
@@ -236,8 +216,7 @@ export default function ThreatMap() {
               <p>Attacks</p>
             </div>
           </div>
-        </div>
-      </div>
+        </div>} />
 
       <div className="rounded-2xl border border-[#8DA99B]/50 bg-white/50 p-4">
         {status === "loading" && (

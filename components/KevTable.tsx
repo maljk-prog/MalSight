@@ -1,5 +1,7 @@
 "use client";
 
+import DashboardViewHero from "./DashboardViewHero";
+
 import { useEffect, useMemo, useState } from "react";
 
 type KevVulnerability = {
@@ -26,6 +28,21 @@ type VendorGroup = {
   products: ProductGroup[];
 };
 
+type CveLookup = {
+  id: string;
+  status: string;
+  published: string | null;
+  lastModified: string | null;
+  description: string;
+  score: number | null;
+  severity: string | null;
+  vector: string | null;
+  weaknesses: string[];
+  references: { url: string; source: string; tags: string[] }[];
+  inCisaKev: boolean;
+  source: string;
+};
+
 function sortByLatest(a: KevVulnerability, b: KevVulnerability) {
   return b.dateAdded.localeCompare(a.dateAdded);
 }
@@ -36,6 +53,23 @@ function isAddedWithinLast30Days(vulnerability: KevVulnerability) {
   if (!Number.isFinite(addedAt)) return false;
 
   return Date.now() - addedAt <= 30 * 24 * 60 * 60 * 1000;
+}
+
+function preferredVendorReference(lookup: CveLookup | null, cveId: string) {
+  if (!lookup || lookup.id.toUpperCase() !== cveId.toUpperCase()) return null;
+  return lookup.references.find((reference) =>
+    reference.tags.some((tag) => /vendor advisory|patch/i.test(tag)),
+  ) || null;
+}
+
+function ransomwareStatus(value?: string) {
+  if (/^known$/i.test(value || "")) {
+    return "Confirmed by CISA: used in known ransomware campaigns.";
+  }
+  if (/^unknown$/i.test(value || "") || !value) {
+    return "Not confirmed by CISA: its KEV catalog does not currently identify known ransomware campaign use.";
+  }
+  return value;
 }
 
 function groupByVendor(vulnerabilities: KevVulnerability[]) {
@@ -86,6 +120,9 @@ export default function KevTable({
 }) {
   const [selectedLetter, setSelectedLetter] = useState("Top 15");
   const [keyword, setKeyword] = useState("");
+  const [lookup, setLookup] = useState<CveLookup | null>(null);
+  const [lookupStatus, setLookupStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [lookupError, setLookupError] = useState("");
 
   useEffect(() => {
     if (!selectedCve) return;
@@ -117,6 +154,38 @@ export default function KevTable({
         .includes(normalizedKeyword),
     );
   }, [normalizedKeyword, vulnerabilities]);
+
+  useEffect(() => {
+    setLookup(null);
+    setLookupError("");
+    if (!searchedCve) {
+      setLookupStatus("idle");
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setLookupStatus("loading");
+      try {
+        const response = await fetch(`/api/cve?id=${encodeURIComponent(searchedCve)}`, {
+          signal: controller.signal,
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "CVE lookup failed.");
+        setLookup(payload as CveLookup);
+        setLookupStatus("ready");
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        setLookupError(error instanceof Error ? error.message : "CVE lookup failed.");
+        setLookupStatus("error");
+      }
+    }, 250);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [searchedCve]);
   const vendorGroups = useMemo(
     () => groupByVendor(matchingVulnerabilities),
     [matchingVulnerabilities],
@@ -160,21 +229,7 @@ export default function KevTable({
 
   return (
     <div>
-      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
-          <p className="text-sm font-bold tracking-[0.3em] text-[#3F6B5A]">
-            EXPLOITED CVEs
-          </p>
-          <h2 className="mt-2 text-3xl font-black">
-            Known exploited CVEs by vendor
-          </h2>
-          <p className="mt-2 text-[#466357]">
-            CISA KEV is a curated list of CVEs known to be exploited in the
-            wild. Browse them by vendor, jump by letter, or search by keyword.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-3 gap-3 text-center text-sm font-semibold text-[#243B32]">
+      <DashboardViewHero eyebrow="EXPLOITED CVEs · CISA KEV + NIST NVD" title="Known exploited CVEs by vendor" description="Browse CISA's catalog of vulnerabilities known to be exploited in the wild, or enter any exact CVE ID to retrieve its NIST NVD record—even when it is not in KEV." aside={<div className="grid grid-cols-3 gap-3 text-center text-sm font-semibold">
           <div className="rounded-2xl bg-white/60 p-3">
             <p className="text-2xl font-black">{vendorGroups.length}</p>
             <p>Vendors</p>
@@ -189,8 +244,7 @@ export default function KevTable({
             </p>
             <p>CVEs</p>
           </div>
-        </div>
-      </div>
+        </div>} />
 
       <div className="mb-4 rounded-2xl border border-[#8DA99B]/50 bg-white/50 p-4">
         <div className="mb-4 grid gap-4">
@@ -301,16 +355,73 @@ export default function KevTable({
           <div className="rounded-2xl bg-[#E6E4DE] p-5 text-[#466357]">
             {searchedCve ? (
               <>
-                <p className="font-black text-[#243B32]">
-                  {searchedCve} is not currently in the CISA Known Exploited
-                  Vulnerabilities catalog.
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-xl font-black text-[#243B32]">{searchedCve}</p>
+                  <span className="cve-kev-status rounded-full px-3 py-1 text-xs font-black">
+                    {lookupStatus === "ready"
+                      ? lookup?.inCisaKev ? "CONFIRMED IN CISA KEV" : "NOT IN CISA KEV"
+                      : "CHECKING CISA KEV"}
+                  </span>
+                </div>
+                <p className="mt-2 font-semibold">
+                  {lookupStatus === "ready" && lookup?.inCisaKev
+                    ? "NVD confirms that CISA lists this vulnerability as known to be actively exploited."
+                    : lookupStatus === "ready"
+                      ? "CISA has not added this CVE to its known-exploited catalog. That is not proof that exploitation has never occurred."
+                      : "Checking authoritative vulnerability and exploitation records..."}
                 </p>
-                <p className="mt-2">
-                  This does not mean the CVE is invalid. It means CISA KEV—the
-                  dataset used by this panel—does not currently list it as
-                  known to be exploited in the wild.
-                </p>
+                {lookupStatus === "loading" && (
+                  <p className="mt-4 font-bold text-[#3F6B5A]">Loading the NIST NVD record...</p>
+                )}
+                {lookupStatus === "error" && (
+                  <p className="mt-4 rounded-xl border border-[#B3261E]/30 bg-white/60 p-3 font-bold text-[#B3261E]">
+                    {lookupError}
+                  </p>
+                )}
+                {lookupStatus === "ready" && lookup && (
+                  <article className="mt-4 rounded-xl border border-[#8DA99B]/60 bg-white/70 p-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-full bg-[#3F6B5A] px-3 py-1 text-xs font-black text-white">
+                        NVD {lookup.status.toUpperCase()}
+                      </span>
+                      {lookup.score !== null && (
+                        <span className="rounded-full border border-[#3F6B5A] px-3 py-1 text-xs font-black text-[#3F6B5A]">
+                          CVSS {lookup.score} {lookup.severity || ""}
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-4 leading-relaxed">{lookup.description}</p>
+                    <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
+                      <p><b>Published:</b> {lookup.published?.slice(0, 10) || "Unknown"}</p>
+                      <p><b>Last modified:</b> {lookup.lastModified?.slice(0, 10) || "Unknown"}</p>
+                      <p><b>Weakness:</b> {lookup.weaknesses.join(", ") || "Not classified"}</p>
+                      <p className="break-all"><b>Vector:</b> {lookup.vector || "Not scored"}</p>
+                    </div>
+                    {lookup.references.length > 0 && (
+                      <div className="mt-4">
+                        <p className="text-sm font-black text-[#243B32]">Primary references</p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {lookup.references.slice(0, 4).map((reference) => (
+                            <a key={reference.url} href={reference.url} target="_blank" rel="noopener noreferrer"
+                              className="rounded-lg border border-[#8DA99B] bg-white px-3 py-2 text-xs font-bold text-[#3F6B5A]">
+                              {reference.tags[0] || reference.source}
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </article>
+                )}
                 <div className="mt-4 flex flex-wrap gap-2">
+                  {onOpenNewsForCve && (
+                    <button
+                      type="button"
+                      onClick={() => onOpenNewsForCve(searchedCve)}
+                      className="rounded-xl border border-[#3F6B5A] bg-white/70 px-4 py-2 text-sm font-bold text-[#3F6B5A]"
+                    >
+                      Public reports and news
+                    </button>
+                  )}
                   <a
                     href={`https://nvd.nist.gov/vuln/detail/${searchedCve}`}
                     target="_blank"
@@ -330,7 +441,7 @@ export default function KevTable({
                 </div>
               </>
             ) : (
-              "No CISA KEV entries match that keyword."
+              "No CISA KEV entries match that keyword. Enter an exact CVE ID to search the full NVD database."
             )}
           </div>
         )}
@@ -428,6 +539,21 @@ export default function KevTable({
                               Required action
                             </p>
                             <p className="mt-1">{vulnerability.requiredAction}</p>
+                            {preferredVendorReference(lookup, vulnerability.cveID) && (
+                              <p className="mt-2 rounded-lg border border-[#8DA99B]/60 bg-white/70 p-2">
+                                <span className="font-bold text-[#243B32]">Vendor guidance: </span>
+                                Review and apply the security update listed in the{" "}
+                                <a
+                                  href={preferredVendorReference(lookup, vulnerability.cveID)!.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="font-bold text-[#3F6B5A] underline"
+                                >
+                                  vendor advisory
+                                </a>
+                                {" "}for every affected system.
+                              </p>
+                            )}
                           </div>
 
                           <div>
@@ -435,8 +561,7 @@ export default function KevTable({
                               Known ransomware use
                             </p>
                             <p className="mt-1">
-                              {vulnerability.knownRansomwareCampaignUse ||
-                                "Unknown"}
+                              {ransomwareStatus(vulnerability.knownRansomwareCampaignUse)}
                             </p>
                           </div>
                         </div>

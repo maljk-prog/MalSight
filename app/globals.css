@@ -2165,3 +2165,175 @@ body {
 .news-room-reporter-note span,.news-room-story-note li,.news-room-drawer div { color:var(--room-muted) !important; }
 .news-room-drawer { border-color:var(--room-border); }
 .news-room-archive { border-color:var(--room-border); background:var(--room-dark); color:var(--theme-deep-text); }
+
+/* Keep CVE status readable across every color scheme. */
+.cve-kev-status {
+  border: 1px solid color-mix(in srgb, var(--theme-border) 78%, transparent);
+  background: color-mix(in srgb, var(--theme-surface-soft) 70%, transparent);
+  color: var(--theme-muted);
+}
+
+/* Bring the newsroom into the same soft-panel system as the dashboard. */
+.news-room-shell {
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.news-room-header {
+  min-height: 230px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--theme-border) 72%, transparent);
+  border-radius: 22px;
+  padding: 30px;
+  background:
+    linear-gradient(90deg, transparent 49.5%, #ffffff08 50%, transparent 50.5%) 0 0/46px 46px,
+    linear-gradient(#ffffff06 49.5%, transparent 50%) 0 0/46px 46px,
+    linear-gradient(135deg, var(--room-mid), var(--room-dark));
+  box-shadow: 0 16px 30px color-mix(in srgb, var(--theme-shadow) 24%, transparent);
+}
+.news-room-header::after { height: 5px; box-shadow: none; opacity: .72; }
+.news-room-brief,
+.news-room-deskbar,
+.news-room-board,
+.news-room-archive {
+  margin: 0 0 16px;
+  border: 1px solid color-mix(in srgb, var(--theme-border) 70%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--theme-surface) 82%, transparent);
+  color: var(--theme-text);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--theme-shadow) 14%, transparent);
+}
+.news-room-brief { padding: 22px 24px; }
+.news-room-deskbar { padding: 20px; }
+.news-room-deskbar label > span { color: var(--theme-muted) !important; }
+.news-room-search {
+  border: 1px solid var(--theme-border) !important;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--theme-surface) 88%, transparent) !important;
+  padding: 12px 14px;
+  color: var(--theme-text) !important;
+  box-shadow: none;
+}
+.news-room-search:focus {
+  border-color: var(--theme-accent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-accent) 16%, transparent);
+}
+.news-room-filter {
+  border: 1px solid var(--theme-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--theme-surface) 78%, transparent);
+  padding: 8px 13px;
+  color: var(--theme-text) !important;
+  box-shadow: none;
+}
+.news-room-filter:hover,
+.news-room-filter.is-active {
+  border-color: var(--theme-accent);
+  background: var(--theme-accent);
+  color: var(--theme-on-accent) !important;
+  transform: none;
+}
+.news-room-board {
+  padding: 22px;
+  outline: 0;
+  background-color: color-mix(in srgb, var(--theme-surface-soft) 88%, transparent);
+  background-image: radial-gradient(color-mix(in srgb, var(--theme-border) 32%, transparent) 1px, transparent 1px);
+  background-size: 12px 12px;
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--theme-shadow) 14%, transparent);
+}
+.news-room-board-count {
+  transform: none;
+  border: 1px solid var(--theme-border);
+  border-radius: 999px;
+  background: var(--theme-surface);
+  color: var(--theme-text) !important;
+  box-shadow: none;
+}
+.news-room-story-note,
+.news-room-story-note:nth-child(even) {
+  border: 1px solid color-mix(in srgb, var(--theme-border) 72%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--theme-surface) 94%, transparent);
+  padding: 22px;
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--theme-shadow) 14%, transparent);
+  transform: none;
+}
+.news-room-pin { display: none; }
+.news-room-desk-note {
+  border: 1px solid var(--theme-border);
+  border-radius: 999px;
+  background: var(--theme-surface-soft);
+  padding: 6px 9px;
+}
+.news-room-story-meta { overflow: hidden; border-radius: 12px; }
+.news-room-reporter-note { border-radius: 0 12px 12px 0; }
+.news-room-drawer { border-top-style: solid; }
+.news-room-archive { padding: 16px; color: var(--theme-text); }
+.news-room-archive > summary { color: var(--theme-accent); }
+@media (max-width:800px) {
+  .news-room-header { margin-bottom: 12px; border-radius: 18px; padding: 26px 20px 32px; }
+  .news-room-brief,.news-room-deskbar,.news-room-board,.news-room-archive { margin-bottom: 12px; }
+  .news-room-board { margin: 0 0 12px; border-width: 1px; padding: 16px 12px; }
+}
+
+/* One consistent, theme-aware introduction panel for every dashboard view. */
+.dashboard-view-hero {
+  position: relative;
+  display: flex;
+  min-height: 230px;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+  overflow: hidden;
+  margin-bottom: 1rem;
+  border: 1px solid color-mix(in srgb, var(--theme-border) 72%, transparent);
+  border-radius: 22px;
+  padding: 30px;
+  background:
+    linear-gradient(90deg, transparent 49.5%, #ffffff08 50%, transparent 50.5%) 0 0/46px 46px,
+    linear-gradient(#ffffff06 49.5%, transparent 50%) 0 0/46px 46px,
+    linear-gradient(135deg, var(--room-mid), var(--room-dark));
+  color: var(--theme-deep-text);
+  box-shadow: 0 16px 30px color-mix(in srgb, var(--theme-shadow) 24%, transparent);
+}
+.dashboard-view-hero::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 5px;
+  background: repeating-linear-gradient(90deg, var(--room-trim) 0 30px, color-mix(in srgb, var(--room-trim) 75%, var(--room-border)) 30px 60px);
+  content: "";
+  opacity: .72;
+}
+.dashboard-view-hero-copy { position: relative; z-index: 1; max-width: 48rem; }
+.dashboard-view-hero-eyebrow { color: color-mix(in srgb, var(--theme-warm) 72%, var(--theme-deep-text)); font-size: .78rem; font-weight: 900; letter-spacing: .26em; text-transform: uppercase; }
+.dashboard-view-hero-title { margin-top: .7rem; color: var(--theme-deep-text); font-size: clamp(2rem, 4vw, 3rem); font-weight: 900; line-height: 1.05; }
+.dashboard-view-hero-description { margin-top: .8rem; max-width: 42rem; color: var(--theme-deep-muted); font-size: .95rem; font-weight: 600; line-height: 1.65; }
+.dashboard-view-hero-aside { position: relative; z-index: 1; flex: 0 0 auto; color: var(--theme-deep-text); }
+.dashboard-view-hero-aside p { color: var(--theme-deep-muted) !important; }
+.dashboard-view-hero-aside > .grid > div { border: 1px solid color-mix(in srgb, var(--theme-deep-muted) 32%, transparent); background: color-mix(in srgb, var(--room-dark) 72%, transparent); color: var(--theme-deep-text); }
+@media(max-width:800px){.dashboard-view-hero{min-height:210px;align-items:flex-start;flex-direction:column;border-radius:18px;padding:26px 20px 32px}.dashboard-view-hero-aside{width:100%}}
+
+/* Intrusion Analysis extends the existing Training Grounds visual system. */
+.intrusion-tag { display:inline-flex; align-items:center; border:1px solid color-mix(in srgb,var(--theme-border) 72%,transparent); border-radius:999px; background:color-mix(in srgb,var(--theme-panel) 62%,transparent); padding:.35rem .65rem; color:var(--theme-muted); font-size:.66rem; font-weight:900; letter-spacing:.08em; }
+.intrusion-tag.is-discovered { border-color:color-mix(in srgb,var(--theme-accent) 58%,var(--theme-border)); background:color-mix(in srgb,var(--theme-accent) 12%,var(--theme-panel)); color:var(--theme-accent); }
+.intrusion-lives { color:#a85555; font-size:1.35rem; font-weight:900; letter-spacing:.12em; }
+.intrusion-evidence { border:1px solid color-mix(in srgb,var(--theme-border) 55%,transparent); border-radius:1rem; background:color-mix(in srgb,var(--theme-surface-soft) 62%,transparent); padding:1rem; color:var(--theme-text); }
+.intrusion-evidence time { color:var(--theme-muted); font-size:.7rem; font-weight:800; }
+.intrusion-evidence h4 { color:var(--theme-accent); font-size:.72rem; letter-spacing:.08em; text-transform:uppercase; }
+.intrusion-evidence code { display:block; margin-top:.55rem; overflow-wrap:anywhere; white-space:pre-wrap; color:var(--theme-muted); font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.76rem; line-height:1.6; }
+.intrusion-path { display:flex; gap:.55rem; overflow-x:auto; overscroll-behavior-x:contain; scroll-snap-type:x proximity; cursor:grab; touch-action:pan-x; padding:.15rem .1rem .65rem; scrollbar-color:var(--theme-accent) color-mix(in srgb,var(--theme-border) 24%,transparent); }
+.intrusion-path:active { cursor:grabbing; }
+.intrusion-path-step { position:relative; min-width:150px; flex:1; border:1px dashed color-mix(in srgb,var(--theme-border) 62%,transparent); border-radius:.9rem; background:color-mix(in srgb,var(--theme-panel) 45%,transparent); padding:.8rem; color:var(--theme-muted); }
+.intrusion-path-step { scroll-snap-align:end; user-select:none; }
+.intrusion-path-step:not(:last-child)::after { content:"→"; position:absolute; right:-.52rem; top:50%; z-index:2; color:var(--theme-accent); font-weight:900; transform:translate(50%,-50%); }
+.intrusion-path-step strong,.intrusion-path-step span,.intrusion-path-step small { display:block; }
+.intrusion-path-step strong { font-size:.7rem; letter-spacing:.1em; }
+.intrusion-path-step span { margin-top:.35rem; font-size:.7rem; font-weight:800; }
+.intrusion-path-step small { margin-top:.35rem; font-size:.65rem; line-height:1.35; }
+.intrusion-path-step.is-revealed { border-style:solid; border-color:color-mix(in srgb,var(--theme-accent) 55%,var(--theme-border)); background:color-mix(in srgb,var(--theme-accent) 10%,var(--theme-panel)); color:var(--theme-text); }
+@media(max-width:640px){.intrusion-path-step{min-width:145px}.intrusion-lives{font-size:1.1rem}}

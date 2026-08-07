@@ -207,13 +207,11 @@ export function aggregateThreatWeather(
       (status.status === "validated" || status.status === "empty"),
   ).length;
   const health =
-    mode === "mock"
-      ? "mock"
-      : availableSources === 0
-        ? "unavailable"
-        : availableSources < totalConfiguredSources
-          ? "partial"
-          : "available";
+    availableSources === 0
+      ? "unavailable"
+      : availableSources < totalConfiguredSources
+        ? "partial"
+        : "available";
   const cached = statuses
     .filter((status) => status.mode === "cached")
     .map((status) => status.retrievedAt)
@@ -224,10 +222,7 @@ export function aggregateThreatWeather(
     updatedAt: new Date(now).toISOString(),
     mode,
     health,
-    healthMessage:
-      mode === "mock"
-        ? "Local development mock data is enabled."
-        : healthMessage(availableSources, totalConfiguredSources),
+    healthMessage: healthMessage(availableSources, totalConfiguredSources),
     weatherState,
     threatIndex,
     summary: summarize(weatherState, threatIndex, contributors),

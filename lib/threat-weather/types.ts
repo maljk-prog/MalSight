@@ -1,14 +1,13 @@
 export type IocType = "ip" | "domain" | "url" | "hash" | "email";
 
-export type DataMode = "live" | "cached" | "none" | "mock";
+export type DataMode = "live" | "cached" | "none";
 
 export type SourceValidationStatus =
   | "validated"
   | "failed"
   | "empty"
   | "malformed"
-  | "stale"
-  | "mock";
+  | "stale";
 
 export type SourceStatus = {
   name: string;
@@ -72,7 +71,7 @@ export type IocTotals = Record<IocType, number>;
 export type ThreatWeatherOutput = {
   updatedAt: string;
   mode: DataMode;
-  health: "available" | "partial" | "unavailable" | "mock";
+  health: "available" | "partial" | "unavailable";
   healthMessage: string;
   weatherState: ThreatWeatherState;
   threatIndex: number | null;

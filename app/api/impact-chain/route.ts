@@ -549,6 +549,39 @@ function consumerOrCustomerImpact(article: Article, profile: ImpactProfile) {
   return "Consumer or Customer Impact: customers may experience delays, additional security checks, account-recovery work, or reduced trust depending on how closely they rely on the affected service";
 }
 
+function capitalizeOpening(value: string) {
+  const cleaned = value.trim().replace(/\s+/g, " ");
+  const firstLetter = cleaned.search(/[A-Za-z]/);
+  if (firstLetter < 0) return cleaned;
+
+  return `${cleaned.slice(0, firstLetter)}${cleaned.charAt(firstLetter).toUpperCase()}${cleaned.slice(firstLetter + 1)}`;
+}
+
+function professionalSentence(value: string) {
+  const labelMatch = value.match(/^([^:]+:\s*)(.*)$/);
+  const prefix = labelMatch?.[1] || "";
+  const body = capitalizeOpening(labelMatch?.[2] || value);
+  const punctuated = /[.!?]$/.test(body) ? body : `${body}.`;
+
+  return `${prefix}${punctuated}`;
+}
+
+function professionalizeProfile(profile: ImpactProfile): ImpactProfile {
+  return {
+    ...profile,
+    industry: capitalizeOpening(profile.industry),
+    affectedSystem: capitalizeOpening(profile.affectedSystem),
+    protectedAsset: capitalizeOpening(profile.protectedAsset),
+    threatEvent: professionalSentence(profile.threatEvent),
+    exposure: professionalSentence(profile.exposure),
+    ciaImpact: professionalSentence(profile.ciaImpact),
+    likelihood: professionalSentence(profile.likelihood),
+    riskResponse: professionalSentence(profile.riskResponse),
+    simpleAnalogy: professionalSentence(profile.simpleAnalogy),
+    humanImpact: profile.humanImpact.map(professionalSentence),
+  };
+}
+
 export function classifyImpact(article: Article) {
   const text = `${article.title} ${article.contentSnippet}`.toLowerCase();
   const incidentProfile = incidentSpecificImpact(article);
@@ -566,13 +599,13 @@ export function classifyImpact(article: Article) {
 export function impactForArticle(article: Article) {
   const profile = classifyImpact(article);
 
-  return {
+  return professionalizeProfile({
     ...profile,
     humanImpact: [
       ...profile.humanImpact,
       consumerOrCustomerImpact(article, profile),
     ],
-  };
+  });
 }
 
 function isBreachLike(article: Article) {
@@ -593,7 +626,12 @@ function isBreachLike(article: Article) {
 }
 
 async function readFeed(source: FeedSource): Promise<Article[]> {
-  const feed = await parser.parseURL(source.feed);
+  const response = await fetch(source.feed, {
+    headers: { "User-Agent": "MalSight impact-chain reader" },
+    next: { revalidate: 86400 },
+  });
+  if (!response.ok) throw new Error(`Feed request failed: HTTP ${response.status}`);
+  const feed = await parser.parseString(await response.text());
 
   return feed.items
     .map((item) => {

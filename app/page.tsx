@@ -2,19 +2,43 @@ import DashboardTabs from "../components/DashboardTabs";
 import HeroLiveFeatures from "../components/HeroLiveFeatures";
 import SocRpgBackdrop from "../components/SocRpgBackdrop";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import { unstable_cache } from "next/cache";
 
 const CISA_KEV_FEED =
   "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json";
 
+const getCachedKevData = unstable_cache(async () => {
+  const res = await fetch(CISA_KEV_FEED, {
+    cache: "no-store",
+    signal: AbortSignal.timeout(12_000),
+  });
+
+  if (!res.ok) {
+    throw new Error("CISA KEV feed request failed");
+  }
+
+  const data = await res.json();
+  const vulnerabilities = Array.isArray(data.vulnerabilities)
+    ? data.vulnerabilities.map((item: Record<string, unknown>) => ({
+        cveID: item.cveID,
+        vendorProject: item.vendorProject,
+        product: item.product,
+        vulnerabilityName: item.vulnerabilityName,
+        dateAdded: item.dateAdded,
+        shortDescription: item.shortDescription,
+        requiredAction: item.requiredAction,
+        dueDate: item.dueDate,
+        knownRansomwareCampaignUse: item.knownRansomwareCampaignUse,
+        notes: item.notes,
+      }))
+    : [];
+
+  return { count: vulnerabilities.length, vulnerabilities };
+}, ["cisa-kev-ui"], { revalidate: 86400 });
+
 async function getKevData() {
   try {
-    const res = await fetch(CISA_KEV_FEED, { next: { revalidate: 86400 } });
-
-    if (!res.ok) {
-      throw new Error("CISA KEV feed request failed");
-    }
-
-    return res.json();
+    return await getCachedKevData();
   } catch {
     return {
       count: 0,

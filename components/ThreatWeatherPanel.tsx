@@ -6,11 +6,12 @@ type IocType = "ip" | "domain" | "url" | "hash" | "email";
 const VISIBLE_IOC_TYPES: IocType[] = ["ip", "domain", "url", "hash"];
 
 const WEATHER_REFRESH_MS = 24 * 60 * 60 * 1000;
+const WEATHER_RETRY_MS = 30 * 1000;
 
 type ThreatWeatherResponse = {
   updatedAt: string;
-  mode: "live" | "cached" | "none" | "mock";
-  health: "available" | "partial" | "unavailable" | "mock";
+  mode: "live" | "cached" | "none";
+  health: "available" | "partial" | "unavailable";
   healthMessage: string;
   weatherState: string;
   threatIndex: number | null;
@@ -20,7 +21,7 @@ type ThreatWeatherResponse = {
   sourceStatuses: {
     name: string;
     configured: boolean;
-    mode: "live" | "cached" | "none" | "mock";
+    mode: "live" | "cached" | "none";
     status: string;
     retrievedAt: string | null;
     itemCount: number;
@@ -92,7 +93,6 @@ function indexColor(value: number | null) {
 function healthPill(health: ThreatWeatherResponse["health"]) {
   if (health === "available") return "bg-[#3F6B5A] text-white";
   if (health === "partial") return "bg-[#D97706] text-white";
-  if (health === "mock") return "bg-[#5B4B22] text-white";
   return "bg-[#B3261E] text-white";
 }
 
@@ -112,14 +112,12 @@ function iocLabel(type: IocType) {
 
 function sourceModeLabel(mode: ThreatWeatherResponse["mode"]) {
   if (mode === "none") return "unavailable";
-  if (mode === "mock") return "mock";
   return mode;
 }
 
 function sourceModeClass(mode: ThreatWeatherResponse["mode"]) {
   if (mode === "live") return "bg-[#3F6B5A] text-white";
   if (mode === "cached") return "bg-[#D97706] text-white";
-  if (mode === "mock") return "bg-[#5B4B22] text-white";
   return "bg-[#B3261E] text-white";
 }
 
@@ -130,6 +128,7 @@ export default function ThreatWeatherPanel() {
 
   useEffect(() => {
     let cancelled = false;
+    let refreshTimer: number | undefined;
 
     async function loadWeather() {
       try {
@@ -139,18 +138,25 @@ export default function ThreatWeatherPanel() {
         if (!cancelled) {
           setData(payload);
           setStatus("ready");
+          const shouldRetrySoon = payload.health === "unavailable";
+          refreshTimer = window.setTimeout(
+            loadWeather,
+            shouldRetrySoon ? WEATHER_RETRY_MS : WEATHER_REFRESH_MS,
+          );
         }
       } catch {
-        if (!cancelled) setStatus("error");
+        if (!cancelled) {
+          setStatus("error");
+          refreshTimer = window.setTimeout(loadWeather, WEATHER_RETRY_MS);
+        }
       }
     }
 
     loadWeather();
-    const refreshTimer = window.setInterval(loadWeather, WEATHER_REFRESH_MS);
 
     return () => {
       cancelled = true;
-      window.clearInterval(refreshTimer);
+      if (refreshTimer !== undefined) window.clearTimeout(refreshTimer);
     };
   }, []);
 
@@ -211,7 +217,7 @@ export default function ThreatWeatherPanel() {
                 </h2>
               </div>
               <span className={`rounded-full px-3 py-1 text-xs font-black ${healthPill(data.health)}`}>
-                {data.health === "mock" ? "DEV MOCK" : data.health.toUpperCase()}
+                {data.health.toUpperCase()}
               </span>
             </div>
 

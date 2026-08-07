@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { questionBank } from "../lib/training/expandedQuestions";
 import type { AnswerId, Difficulty, QuizQuestion, SecurityDomain } from "../lib/training/types";
+import IntrusionAnalysis from "./IntrusionAnalysis";
+import DashboardViewHero from "./DashboardViewHero";
 
 const domains: { id: SecurityDomain | "mixed"; name: string; description: string }[] = [
   { id:"mixed", name:"Mixed / All Domains", description:"Draw from every governance and technical security category." },
@@ -32,6 +34,7 @@ type Screen = "setup" | "quiz" | "results";
 const shuffle = <T,>(items: T[]) => [...items].sort(() => Math.random() - 0.5);
 
 export default function TrainingGrounds() {
+  const [mode, setMode] = useState<"knowledge" | "intrusion">("knowledge");
   const [selectedDomains, setSelectedDomains] = useState<(SecurityDomain | "mixed")[]>(["mixed"]);
   const [difficulty, setDifficulty] = useState<Difficulty>("orange");
   const [length, setLength] = useState(10);
@@ -40,6 +43,8 @@ export default function TrainingGrounds() {
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState<AnswerId | null>(null);
   const [results, setResults] = useState<Result[]>([]);
+  const [streak, setStreak] = useState(0);
+  const [bestStreak, setBestStreak] = useState(0);
 
   const uniqueQuestionCount = useMemo(() => {
     const concepts = new Set(
@@ -81,13 +86,20 @@ export default function TrainingGrounds() {
       if (!uniqueByConcept.has(duplicateKey)) uniqueByConcept.set(duplicateKey, question);
     });
     const session = shuffle([...uniqueByConcept.values()]).slice(0, Math.min(length, uniqueByConcept.size));
-    setQuestions(session); setIndex(0); setSelected(null); setResults([]); setScreen("quiz");
+    setQuestions(session); setIndex(0); setSelected(null); setResults([]); setStreak(0); setBestStreak(0); setScreen("quiz");
   };
 
   const answer = (id: AnswerId) => {
     if (selected) return;
     setSelected(id);
     setResults((current) => [...current, { question: questions[index], answer: id }]);
+    if (id === questions[index].correctAnswer) {
+      const nextStreak = streak + 1;
+      setStreak(nextStreak);
+      setBestStreak((current) => Math.max(current, nextStreak));
+    } else {
+      setStreak(0);
+    }
   };
 
   const next = () => {
@@ -108,7 +120,7 @@ export default function TrainingGrounds() {
       <header className="training-header rounded-2xl p-5 sm:p-7">
         <button className="training-back mb-5" onClick={() => setScreen("setup")} aria-label="Leave quiz and return to Training Grounds">← BACK TO TRAINING GROUNDS</button>
         <p className="theme-kicker text-xs font-black tracking-[.28em]">TRAINING GROUNDS</p>
-        <div className="mt-2 flex flex-wrap items-end justify-between gap-3"><div><h2 className="theme-title text-2xl font-black">{domainName}</h2><p className={`training-level is-${difficulty}`}>{difficulty.toUpperCase()}</p></div><p className="theme-muted font-bold">Question {index + 1} / {questions.length}</p></div>
+        <div className="mt-2 flex flex-wrap items-end justify-between gap-3"><div><h2 className="theme-title text-2xl font-black">{domainName}</h2><p className={`training-level is-${difficulty}`}>{difficulty.toUpperCase()}</p></div><div className="text-right"><p className="theme-muted font-bold">Question {index + 1} / {questions.length}</p><p className="theme-muted mt-1 text-sm font-black">🔥 {streak} · BEST {bestStreak}</p></div></div>
         <div className="training-progress mt-5"><span style={{ width:`${((index + 1) / questions.length) * 100}%` }} /></div>
       </header>
       <section className="training-card rounded-2xl p-5 sm:p-8">
@@ -130,13 +142,16 @@ export default function TrainingGrounds() {
   }
 
   if (screen === "results") return <div className="training-card rounded-2xl p-6 sm:p-9">
-    <p className="theme-kicker text-xs font-black tracking-[.28em]">TRAINING COMPLETE</p><h2 className="theme-title mt-2 text-4xl font-black">{score} / {results.length}</h2><p className="theme-muted mt-1 text-lg font-bold">{Math.round(score / results.length * 100)}% accuracy</p>
+    <p className="theme-kicker text-xs font-black tracking-[.28em]">TRAINING COMPLETE</p><h2 className="theme-title mt-2 text-4xl font-black">{score} / {results.length}</h2><p className="theme-muted mt-1 text-lg font-bold">{Math.round(score / results.length * 100)}% accuracy · Best streak 🔥 {bestStreak}</p>
     <div className="mt-7 grid gap-3 sm:grid-cols-2">{domainBreakdown.map((d) => <div className="training-result" key={d.name}><span>{d.name}</span><strong>{d.correct} / {d.total}</strong></div>)}</div>
     <div className="mt-8 flex flex-wrap gap-3"><button className="training-primary" onClick={start}>TRAIN AGAIN</button><button className="training-secondary" onClick={() => setScreen("setup")}>CHANGE DOMAIN</button><button className="training-secondary" onClick={() => setScreen("setup")}>CHANGE DIFFICULTY</button><button className="training-secondary" onClick={() => setScreen("setup")}>BACK TO TRAINING GROUNDS</button></div>
   </div>;
 
+  if (mode === "intrusion") return <IntrusionAnalysis onBack={() => setMode("knowledge")} />;
+
   return <div className="training-shell space-y-6">
-    <header className="training-header rounded-2xl p-6 sm:p-8"><p className="theme-kicker text-xs font-black tracking-[.3em]">KNOWLEDGE CHECK</p><h2 className="theme-title mt-2 text-4xl font-black">TRAINING GROUNDS</h2><p className="theme-muted mt-2 text-lg">Sharpen your security skills.</p><p className="theme-muted mt-5 max-w-3xl leading-7">Test your cybersecurity knowledge with questions ranging from foundational concepts to advanced security scenarios.</p></header>
+    <DashboardViewHero eyebrow="KNOWLEDGE CHECK · PRACTICE LAB" title="Training Grounds" description="Sharpen your security skills with foundational questions, advanced security scenarios, and unfolding intrusion investigations." />
+    <section><h3 className="training-section-title">TRAINING MODE</h3><div className="mt-3 grid gap-3 md:grid-cols-2"><button className="training-choice is-selected"><strong>KNOWLEDGE CHECK</strong><span>Existing multiple-choice training across security domains.</span><em className="training-selected-mark">CURRENT MODE</em></button><button className="training-choice" onClick={() => setMode("intrusion")}><strong>INTRUSION ANALYSIS</strong><span>Accept an unfolding SOC investigation, uncover evidence, scope the case, and contain proportionately.</span><em className="training-selected-mark">NEW MODE</em></button></div></section>
     <section><div className="flex flex-wrap items-end justify-between gap-2"><h3 className="training-section-title">1 / SECURITY CATEGORY</h3><p className="theme-muted text-xs">Choose one or more of the {domainCount} categories, or use Mixed for all categories.</p></div><div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">{domains.map((item) => { const selected = selectedDomains.includes(item.id); return <button key={item.id} aria-pressed={selected} onClick={() => chooseDomain(item.id)} className={`training-choice ${selected ? "is-selected" : ""}`}><strong>{item.name}</strong><span>{item.description}</span>{selected && <em className="training-selected-mark">SELECTED</em>}</button>; })}</div></section>
     <section><h3 className="training-section-title">2 / DIFFICULTY</h3><div className="mt-3 grid gap-3 md:grid-cols-3">{levels.map((item) => <button key={item.id} onClick={() => setDifficulty(item.id)} className={`training-choice difficulty-${item.id} ${difficulty === item.id ? "is-selected" : ""}`}><strong>{item.label}</strong><span>{item.description}</span></button>)}</div></section>
     <section><h3 className="training-section-title">3 / SESSION LENGTH</h3><div className="mt-3 flex flex-wrap gap-3">{sessionLengths.map((n) => <button className={`training-length ${length === n ? "is-selected" : ""}`} key={n} onClick={() => setLength(n)}>{n} Questions</button>)}</div><p className="theme-muted mt-3 text-xs">Only genuinely distinct concepts are included. Reworded variants are never used twice in one session.</p></section>

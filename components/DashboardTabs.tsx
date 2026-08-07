@@ -8,6 +8,7 @@ import NewsFeed from "./NewsFeed";
 import ThreatMap from "./ThreatMap";
 import ThreatWeatherPanel from "./ThreatWeatherPanel";
 import TrainingGrounds from "./TrainingGrounds";
+import DashboardViewHero from "./DashboardViewHero";
 
 type KevVulnerability = {
   cveID: string;
@@ -103,20 +104,11 @@ export default function DashboardTabs({ kevData }: { kevData: KevData }) {
 function DashboardHome() {
   return (
     <div className="space-y-6">
-      <div className="theme-home-panel rounded-2xl border border-[#8DA99B]/50 bg-white/50 p-6">
-        <p className="theme-kicker text-sm font-black tracking-[0.3em] text-[#3F6B5A]">
-          MALSIGHT HOME
-        </p>
-        <h2 className="theme-title mt-2 text-3xl font-black text-[#243B32]">
-          Your window into today's threat landscape.
-        </h2>
-        <p className="theme-muted mt-3 text-[#466357]">
-          MalSight brings together exploited vulnerabilities, breach reports,
-          public attack telemetry, and cybersecurity trends into a single
-          workspace designed to help you explore and understand the current
-          threat landscape.
-        </p>
-      </div>
+      <DashboardViewHero
+        eyebrow="MALSIGHT HOME · LIVE OVERVIEW"
+        title="Your window into today's threat landscape."
+        description="MalSight brings together CISA's exploited-vulnerability catalog, full NIST NVD lookups, current security reporting, public source-IP telemetry, validated malicious indicators, human-impact analysis, public-interest signals, and hands-on security training. Live-source health and data freshness stay visible so you can tell what is available, cached, or unavailable."
+      />
 
       <ThreatWeatherPanel />
     </div>

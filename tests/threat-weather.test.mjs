@@ -235,19 +235,17 @@ test("empty live sources do not count as unavailable", () => {
   assert.match(output.healthMessage, /2 live sources/);
 });
 
-test("development mock mode is explicit", async () => {
+test("failed live sources never fall back to fabricated data", async () => {
   sources.clearThreatWeatherCache();
-  process.env.MALSIGHT_USE_MOCK_THREAT_WEATHER = "true";
 
   const failingFetch = async () => {
     throw new Error("network disabled in test");
   };
   const result = await sources.fetchThreatWeatherDatasets(failingFetch, now);
 
-  delete process.env.MALSIGHT_USE_MOCK_THREAT_WEATHER;
-
-  assert.equal(result.mode, "mock");
-  assert.ok(result.datasets.some((item) => item.source === "Local development mock"));
+  assert.equal(result.mode, "live");
+  assert.equal(result.datasets.length, 0);
+  assert.equal(result.statuses.every((item) => item.mode === "none"), true);
 });
 
 test("source list only includes no-account live sources", async () => {

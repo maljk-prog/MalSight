@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import DashboardViewHero from "./DashboardViewHero";
 
 type CoolerTalkResponse = {
   updatedAt?: string;
@@ -274,18 +275,28 @@ export default function CoolerTalk() {
     }).format(new Date(data.updatedAt));
   }, [data?.updatedAt]);
 
+  const viewHero = (
+    <DashboardViewHero eyebrow="COOLER TALK · PUBLIC SIGNALS" title="Search chatter for security people" description="A lighter read on public search attention, cyber-anxiety keywords, and one rotating topic worth explaining at the office cooler." aside={updatedAt && (
+      <p className="rounded-full border border-[#8DA99B]/55 bg-white/55 px-4 py-2 text-sm font-bold text-[#466357]">
+        Updated {updatedAt}
+      </p>
+    )} />
+  );
+
   if (status === "loading") {
     return (
-      <div className="rounded-2xl bg-[#E6E4DE] p-5 text-[#466357]">
-        Listening for Cooler Talk signals...
+      <div>
+        {viewHero}
+        <div className="rounded-2xl bg-[#E6E4DE] p-5 text-[#466357]">Listening for Cooler Talk signals...</div>
       </div>
     );
   }
 
   if (status === "error") {
     return (
-      <div className="rounded-2xl bg-[#E6E4DE] p-5 text-[#466357]">
-        Cooler Talk is temporarily unavailable. Try refreshing the dashboard.
+      <div>
+        {viewHero}
+        <div className="rounded-2xl bg-[#E6E4DE] p-5 text-[#466357]">Cooler Talk is temporarily unavailable. Try refreshing the dashboard.</div>
       </div>
     );
   }
@@ -301,26 +312,7 @@ export default function CoolerTalk() {
 
   return (
     <div>
-      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
-          <p className="text-sm font-bold tracking-[0.3em] text-[#3F6B5A]">
-            COOLER TALK
-          </p>
-          <h2 className="mt-2 text-3xl font-black">
-            Search chatter for security people
-          </h2>
-          <p className="mt-2 max-w-3xl text-[#466357]">
-            A lighter read on public search attention, cyber-anxiety keywords,
-            and one rotating topic worth explaining at the office cooler.
-          </p>
-        </div>
-
-        {updatedAt && (
-          <p className="rounded-full border border-[#8DA99B]/55 bg-white/55 px-4 py-2 text-sm font-bold text-[#466357]">
-            Updated {updatedAt}
-          </p>
-        )}
-      </div>
+      {viewHero}
 
       <div className="grid gap-4 lg:grid-cols-[1fr_0.82fr]">
         <section className="rounded-2xl border border-[#8DA99B]/50 bg-white/50 p-6">

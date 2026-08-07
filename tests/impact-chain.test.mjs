@@ -96,3 +96,38 @@ test("every generated chain ends with consumer or customer impact", () => {
     assert.match(profile.humanImpact.at(-1), /^Consumer or Customer Impact:/);
   }
 });
+
+test("every generated impact field uses professional sentence formatting", () => {
+  const stories = [
+    article(),
+    article({
+      title: "Regional hospital reports a data breach",
+      contentSnippet: "Patient systems and records may have been affected.",
+    }),
+    article({
+      title: "Payment platform disrupted by ransomware",
+      contentSnippet: "Customers experienced an outage while recovery continued.",
+    }),
+  ];
+
+  for (const story of stories) {
+    const profile = impactChain.impactForArticle(story);
+    const sentences = [
+      profile.threatEvent,
+      profile.exposure,
+      profile.ciaImpact,
+      profile.likelihood,
+      profile.riskResponse,
+      profile.simpleAnalogy,
+      ...profile.humanImpact,
+    ];
+
+    for (const sentence of sentences) {
+      const body = sentence.includes(":")
+        ? sentence.slice(sentence.indexOf(":") + 1).trim()
+        : sentence;
+      assert.match(body, /^[A-Z]/, sentence);
+      assert.match(body, /[.!?]$/, sentence);
+    }
+  }
+});

@@ -25,7 +25,24 @@ const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
 const LIVE_REFRESH_MS = DAY;
 const LIVE_REFRESH_SECONDS = 24 * 60 * 60;
+const SOURCE_TIMEOUT_MS = 12_000;
 const cache = new Map<string, SourceDataset>();
+
+async function withSourceTimeout<T>(name: string, operation: Promise<T>) {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(
+      () => reject(new Error(`${name} request timed out`)),
+      SOURCE_TIMEOUT_MS,
+    );
+  });
+
+  try {
+    return await Promise.race([operation, timeout]);
+  } finally {
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
+  }
+}
 
 function status(
   name: string,
@@ -427,30 +444,6 @@ async function fetchOpenPhish(fetcher: Fetcher, now: number) {
   });
 }
 
-async function fetchMock(now: number) {
-  if (process.env.NODE_ENV === "production" || process.env.MALSIGHT_USE_MOCK_THREAT_WEATHER !== "true") {
-    throw new Error("Mock mode disabled");
-  }
-
-  return makeDataset(
-    "Local development mock",
-    HOUR,
-    new Date(now).toISOString(),
-    [
-      {
-        type: "ip",
-        value: "203.0.113.10",
-        source: "Local development mock",
-        firstSeen: null,
-        lastSeen: null,
-        category: "mock",
-        confidence: "low",
-      },
-    ],
-    { iocVolume: 1 },
-  );
-}
-
 export const SOURCE_ADAPTERS: SourceAdapter[] = [
   { name: "CISA KEV", ttlMs: LIVE_REFRESH_MS, configured: () => true, fetch: fetchCisaKev },
   { name: "URLhaus", ttlMs: LIVE_REFRESH_MS, configured: () => true, fetch: fetchUrlhaus },
@@ -487,7 +480,7 @@ async function runAdapter(adapter: SourceAdapter, fetcher: Fetcher, now: number)
   }
 
   try {
-    const dataset = await adapter.fetch(fetcher, now);
+    const dataset = await withSourceTimeout(adapter.name, adapter.fetch(fetcher, now));
 
     if (!isDatasetFresh(dataset, now)) {
       throw new Error("Dataset is stale");
@@ -547,28 +540,16 @@ async function runAdapter(adapter: SourceAdapter, fetcher: Fetcher, now: number)
 }
 
 export async function fetchThreatWeatherDatasets(fetcher: Fetcher = fetch, now = Date.now()) {
-  const adapters =
-    process.env.MALSIGHT_USE_MOCK_THREAT_WEATHER === "true" && process.env.NODE_ENV !== "production"
-      ? [
-          ...SOURCE_ADAPTERS,
-          {
-            name: "Local development mock",
-            ttlMs: HOUR,
-            configured: () => true,
-            fetch: (_fetcher: Fetcher, mockNow: number) => fetchMock(mockNow),
-          },
-        ]
-      : SOURCE_ADAPTERS;
-  const settled = await Promise.all(adapters.map((adapter) => runAdapter(adapter, fetcher, now)));
+  const settled = await Promise.all(
+    SOURCE_ADAPTERS.map((adapter) => runAdapter(adapter, fetcher, now)),
+  );
+  const liveDatasets = settled.flatMap((result) => (result.dataset ? [result.dataset] : []));
 
   return {
-    datasets: settled.flatMap((result) => (result.dataset ? [result.dataset] : [])),
+    datasets: liveDatasets,
     statuses: settled.map((result) => result.status),
-    totalConfiguredSources: adapters.length,
-    mode:
-      process.env.MALSIGHT_USE_MOCK_THREAT_WEATHER === "true" && process.env.NODE_ENV !== "production"
-        ? ("mock" as const)
-        : ("live" as const),
+    totalConfiguredSources: SOURCE_ADAPTERS.length,
+    mode: "live" as const,
   };
 }
 

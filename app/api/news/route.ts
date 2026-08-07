@@ -90,7 +90,12 @@ function toTimestamp(value?: string) {
 }
 
 async function readFeed(source: FeedSource): Promise<NewsItem[]> {
-  const feed = await parser.parseURL(source.feed);
+  const response = await fetch(source.feed, {
+    headers: { "User-Agent": "MalSight security news reader" },
+    next: { revalidate: 86400 },
+  });
+  if (!response.ok) throw new Error(`Feed request failed: HTTP ${response.status}`);
+  const feed = await parser.parseString(await response.text());
 
   return feed.items
     .map((item): NewsItem | null => {

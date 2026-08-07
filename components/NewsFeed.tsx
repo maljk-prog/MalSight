@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import DashboardViewHero from "./DashboardViewHero";
 
 type NewsItem = {
   source: string;
@@ -702,21 +703,7 @@ export default function NewsFeed({
 
   return (
     <div className="news-room-shell">
-      <div className="news-room-header">
-        <div>
-          <p className="news-room-eyebrow">
-            MALSIGHT EDITORIAL DESK · LIVE ROOM
-          </p>
-          <h2 className="mt-3 text-4xl font-black text-[#FFF4D6] sm:text-5xl">
-            News Room
-          </h2>
-          <p className="mt-3 max-w-2xl font-semibold leading-relaxed text-[#D9C9A1]">
-            Here are the stories our newsroom thought were worth pinning today—grouped,
-            compared, and annotated for defenders.
-          </p>
-        </div>
-
-      </div>
+      <DashboardViewHero eyebrow="MALSIGHT EDITORIAL DESK · LIVE ROOM" title="News Room" description="Here are the stories our newsroom thought were worth pinning today—grouped, compared, and annotated for defenders." />
 
       {status === "ready" && clusters[0] && (
         <section className="news-room-brief">

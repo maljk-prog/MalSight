@@ -766,8 +766,17 @@ function trendSignalFromItem(
   };
 }
 
+async function fetchRss(url: string) {
+  const response = await fetch(url, {
+    headers: { "User-Agent": "MalSight trend reader" },
+    next: { revalidate: 3600 },
+  });
+  if (!response.ok) throw new Error(`Feed request failed: HTTP ${response.status}`);
+  return parser.parseString(await response.text());
+}
+
 async function fetchTrendItems(): Promise<ScoredTrendEntry[]> {
-  const feed = await parser.parseURL(GOOGLE_TRENDS_RSS);
+  const feed = await fetchRss(GOOGLE_TRENDS_RSS);
 
   return (feed.items as TrendItem[]).map((item, index) => ({
     item,
@@ -780,7 +789,7 @@ async function fetchTrendItems(): Promise<ScoredTrendEntry[]> {
 
 async function fetchNewsTopicMomentum(query: string, index: number, mode: "cyber" | "panic") {
   const searchWindow = mode === "cyber" ? "31d" : "7d";
-  const feed = await parser.parseURL(
+  const feed = await fetchRss(
     `${GOOGLE_NEWS_SEARCH_RSS}${encodeURIComponent(`${query} when:${searchWindow}`)}`,
   );
   const now = Date.now();

@@ -19,6 +19,8 @@ The Threat Map includes an on-demand public-IP lookup backed by SANS ISC/DShield
 
 Public telemetry may contain false positives. MalSight is an educational and portfolio project, not a blocklist or a substitute for official security guidance.
 
+MalSight does not substitute simulated indicators or fabricated scores when a live source is unavailable. Affected views report unavailable or partial source health and display only validated live or still-fresh cached observations.
+
 ## Run locally
 
 ```bash

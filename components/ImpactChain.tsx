@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import DashboardViewHero from "./DashboardViewHero";
 
 type ImpactItem = {
   source: string;
@@ -54,22 +55,7 @@ export default function ImpactChain() {
 
   return (
     <div>
-      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
-          <p className="text-sm font-bold tracking-[0.3em] text-[#3F6B5A]">
-            HUMAN IMPACT CHAINS
-          </p>
-          <h2 className="mt-2 text-3xl font-black">
-            Five breaches through a human lens
-          </h2>
-          <p className="mt-2 max-w-3xl text-[#466357]">
-            Recent breach and attack reporting translated into hypothetical
-            downstream effects on people, households, workers, and communities,
-            with a light risk-management lens.
-          </p>
-        </div>
-
-        {updatedAt && (
+      <DashboardViewHero eyebrow="HUMAN IMPACT CHAINS" title="Five breaches through a human lens" description="Recent breach and attack reporting translated into hypothetical downstream effects on people, households, workers, and communities, with a light risk-management lens." aside={updatedAt && (
           <p className="text-sm font-semibold text-[#466357]">
             Updated{" "}
             {new Intl.DateTimeFormat("en", {
@@ -79,8 +65,7 @@ export default function ImpactChain() {
               minute: "2-digit",
             }).format(new Date(updatedAt))}
           </p>
-        )}
-      </div>
+        )} />
 
       <div className="rounded-2xl border border-[#8DA99B]/50 bg-white/50 p-4">
         {status === "loading" && (
