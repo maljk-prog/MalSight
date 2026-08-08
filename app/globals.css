@@ -2326,19 +2326,22 @@ body {
 .dashboard-view-hero-description { margin-top: .8rem; max-width: 42rem; color: var(--theme-deep-muted); font-size: .95rem; font-weight: 600; line-height: 1.65; }
 .dashboard-view-hero-aside { position: relative; z-index: 1; flex: 0 0 auto; color: var(--theme-deep-text); }
 .dashboard-view-hero-aside p { color: var(--theme-deep-muted) !important; }
-.dashboard-view-hero-aside > .grid > div { border: 1px solid color-mix(in srgb, var(--theme-deep-muted) 32%, transparent); background: color-mix(in srgb, var(--view-hero-darker) 78%, transparent); color: var(--theme-deep-text); }
+.dashboard-view-hero-aside .dashboard-view-hero-stats > div,
 .dashboard-view-hero-aside > .grid > div {
-  border-color: #52685e;
-  background: #0f1a16;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 3%);
+  border: 1px solid var(--theme-border) !important;
+  background: var(--theme-surface) !important;
+  color: var(--theme-text) !important;
+  box-shadow: 0 5px 14px color-mix(in srgb, var(--theme-shadow) 18%, transparent);
 }
+.dashboard-view-hero-aside .dashboard-view-hero-stats > div > p:first-child,
 .dashboard-view-hero-aside > .grid > div > p:first-child {
-  color: #8fb59f !important;
+  color: var(--theme-text) !important;
   text-shadow: none;
 }
+.dashboard-view-hero-aside .dashboard-view-hero-stats > div > p:last-child,
 .dashboard-view-hero-aside > .grid > div > p:last-child {
   margin-top: .35rem;
-  color: #789386 !important;
+  color: var(--theme-muted) !important;
 }
 @media(max-width:800px){.dashboard-view-hero{min-height:210px;align-items:flex-start;flex-direction:column;border-radius:18px;padding:26px 20px 32px}.dashboard-view-hero-aside{width:100%}}
 
