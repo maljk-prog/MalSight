@@ -56,7 +56,7 @@ export default async function Home() {
         <header className="theme-hero relative min-h-[620px] overflow-hidden rounded-3xl border border-[#8DA99B]/70 bg-[#13231D] p-4 shadow-2xl shadow-[#13231D]/40 sm:p-8">
           <SocRpgBackdrop />
           <div className="theme-hero-tint absolute inset-0 z-[1] bg-[#C8DDD2]/34 backdrop-blur-[1px]" />
-          <div className="theme-hero-panel absolute inset-0 z-[2] flex flex-col justify-end border border-[#C8DDD2]/30 bg-[#C8DDD2]/48 p-4 pb-8 shadow-inner shadow-[#13231D]/25 sm:p-8 sm:pb-10">
+          <div className="theme-hero-panel absolute inset-0 z-[2] flex flex-col justify-end border border-[#C8DDD2]/30 bg-[#C8DDD2]/48 p-4 pb-4 shadow-inner shadow-[#13231D]/25 sm:p-8 sm:pb-6">
             <ThemeSwitcher />
             <div>
               <div className="max-w-xl">
@@ -67,6 +67,10 @@ export default async function Home() {
                 <h1 className="theme-title text-6xl font-black tracking-tight text-[#243B32]">
                   MalSight
                 </h1>
+
+                <p className="theme-title mt-1 text-3xl font-black tracking-tight text-[#243B32]">
+                  Dashboard
+                </p>
 
                 <p className="theme-copy mt-4 max-w-3xl text-lg text-[#243B32]">
                   A tiny SOC making sense of today's cyber landscape.

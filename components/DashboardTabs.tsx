@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import CoolerTalk from "./CoolerTalk";
 import ImpactChain from "./ImpactChain";
 import KevTable from "./KevTable";
 import NewsFeed from "./NewsFeed";
 import ThreatMap from "./ThreatMap";
 import ThreatWeatherPanel from "./ThreatWeatherPanel";
-import TrainingGrounds from "./TrainingGrounds";
 import DashboardViewHero from "./DashboardViewHero";
 
 type KevVulnerability = {
@@ -39,7 +39,6 @@ export default function DashboardTabs({ kevData }: { kevData: KevData }) {
     { id: "impact", label: "Impact Chain" },
     { id: "cooler-talk", label: "Cooler Talk" },
     { id: "kev", label: "Exploited CVEs" },
-    { id: "training", label: "Training Grounds" },
   ];
 
   return (
@@ -68,6 +67,9 @@ export default function DashboardTabs({ kevData }: { kevData: KevData }) {
               {item.label}
             </button>
           ))}
+          <Link className="training-launch-nav" href="/training-grounds">
+            Enter Training Grounds <span aria-hidden="true">↗</span>
+          </Link>
         </nav>
       </div>
 
@@ -95,7 +97,6 @@ export default function DashboardTabs({ kevData }: { kevData: KevData }) {
         {tab === "threat-map" && <ThreatMap />}
         {tab === "impact" && <ImpactChain />}
         {tab === "cooler-talk" && <CoolerTalk />}
-        {tab === "training" && <TrainingGrounds />}
       </div>
     </section>
   );
@@ -107,8 +108,22 @@ function DashboardHome() {
       <DashboardViewHero
         eyebrow="MALSIGHT HOME · LIVE OVERVIEW"
         title="Your window into today's threat landscape."
-        description="MalSight brings together CISA's exploited-vulnerability catalog, full NIST NVD lookups, current security reporting, public source-IP telemetry, validated malicious indicators, human-impact analysis, public-interest signals, and hands-on security training. Live-source health and data freshness stay visible so you can tell what is available, cached, or unavailable."
+        description="MalSight brings together CISA's exploited-vulnerability catalog, full NIST NVD lookups, current security reporting, public source-IP telemetry, validated malicious indicators, human-impact analysis, and public-interest signals. Live-source health and data freshness stay visible so you can tell what is available, cached, or unavailable."
       />
+
+      <aside className="training-launch-card">
+        <div>
+          <p className="training-launch-eyebrow">A SEPARATE MALSIGHT PRODUCT</p>
+          <h3>Ready to step into the Training Grounds?</h3>
+          <p>
+            Leave the live intelligence dashboard and enter a dedicated practice
+            environment for knowledge checks and unfolding intrusion investigations.
+          </p>
+        </div>
+        <Link className="training-launch-button" href="/training-grounds">
+          Enter Training Grounds <span aria-hidden="true">→</span>
+        </Link>
+      </aside>
 
       <ThreatWeatherPanel />
     </div>

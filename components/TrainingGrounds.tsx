@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { questionBank } from "../lib/training/expandedQuestions";
 import type { AnswerId, Difficulty, QuizQuestion, SecurityDomain } from "../lib/training/types";
 import IntrusionAnalysis from "./IntrusionAnalysis";
-import DashboardViewHero from "./DashboardViewHero";
+
 
 const domains: { id: SecurityDomain | "mixed"; name: string; description: string }[] = [
   { id:"mixed", name:"Mixed / All Domains", description:"Draw from every governance and technical security category." },
@@ -34,7 +34,7 @@ type Screen = "setup" | "quiz" | "results";
 const shuffle = <T,>(items: T[]) => [...items].sort(() => Math.random() - 0.5);
 
 export default function TrainingGrounds() {
-  const [mode, setMode] = useState<"knowledge" | "intrusion">("knowledge");
+  const [mode, setMode] = useState<"knowledge" | "intrusion" | null>(null);
   const [selectedDomains, setSelectedDomains] = useState<(SecurityDomain | "mixed")[]>(["mixed"]);
   const [difficulty, setDifficulty] = useState<Difficulty>("orange");
   const [length, setLength] = useState(10);
@@ -147,15 +147,37 @@ export default function TrainingGrounds() {
     <div className="mt-8 flex flex-wrap gap-3"><button className="training-primary" onClick={start}>TRAIN AGAIN</button><button className="training-secondary" onClick={() => setScreen("setup")}>CHANGE DOMAIN</button><button className="training-secondary" onClick={() => setScreen("setup")}>CHANGE DIFFICULTY</button><button className="training-secondary" onClick={() => setScreen("setup")}>BACK TO TRAINING GROUNDS</button></div>
   </div>;
 
-  if (mode === "intrusion") return <IntrusionAnalysis onBack={() => setMode("knowledge")} />;
-
   return <div className="training-shell space-y-6">
-    <DashboardViewHero eyebrow="KNOWLEDGE CHECK · PRACTICE LAB" title="Training Grounds" description="Sharpen your security skills with foundational questions, advanced security scenarios, and unfolding intrusion investigations." />
-    <section><h3 className="training-section-title">TRAINING MODE</h3><div className="mt-3 grid gap-3 md:grid-cols-2"><button className="training-choice is-selected"><strong>KNOWLEDGE CHECK</strong><span>Existing multiple-choice training across security domains.</span><em className="training-selected-mark">CURRENT MODE</em></button><button className="training-choice" onClick={() => setMode("intrusion")}><strong>INTRUSION ANALYSIS</strong><span>Accept an unfolding SOC investigation, uncover evidence, scope the case, and contain proportionately.</span><em className="training-selected-mark">NEW MODE</em></button></div></section>
-    <section><div className="flex flex-wrap items-end justify-between gap-2"><h3 className="training-section-title">1 / SECURITY CATEGORY</h3><p className="theme-muted text-xs">Choose one or more of the {domainCount} categories, or use Mixed for all categories.</p></div><div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">{domains.map((item) => { const selected = selectedDomains.includes(item.id); return <button key={item.id} aria-pressed={selected} onClick={() => chooseDomain(item.id)} className={`training-choice ${selected ? "is-selected" : ""}`}><strong>{item.name}</strong><span>{item.description}</span>{selected && <em className="training-selected-mark">SELECTED</em>}</button>; })}</div></section>
-    <section><h3 className="training-section-title">2 / DIFFICULTY</h3><div className="mt-3 grid gap-3 md:grid-cols-3">{levels.map((item) => <button key={item.id} onClick={() => setDifficulty(item.id)} className={`training-choice difficulty-${item.id} ${difficulty === item.id ? "is-selected" : ""}`}><strong>{item.label}</strong><span>{item.description}</span></button>)}</div></section>
-    <section><h3 className="training-section-title">3 / SESSION LENGTH</h3><div className="mt-3 flex flex-wrap gap-3">{sessionLengths.map((n) => <button className={`training-length ${length === n ? "is-selected" : ""}`} key={n} onClick={() => setLength(n)}>{n} Questions</button>)}</div><p className="theme-muted mt-3 text-xs">Only genuinely distinct concepts are included. Reworded variants are never used twice in one session.</p></section>
-    <button className="training-primary w-full sm:w-auto" onClick={start}>START TRAINING</button>
+    <section>
+      <h3 className="training-section-title">CHOOSE A TRAINING MODE</h3>
+      <div className="mt-3 grid gap-3 md:grid-cols-2">
+        <button
+          className={`training-choice ${mode === "knowledge" ? "is-selected" : ""}`}
+          onClick={() => setMode("knowledge")}
+        >
+          <strong>KNOWLEDGE CHECK</strong>
+          <span>Multiple-choice training across security domains, difficulty levels, and adjustable session lengths.</span>
+          {mode === "knowledge" && <em className="training-selected-mark">SELECTED</em>}
+        </button>
+        <button
+          className={`training-choice ${mode === "intrusion" ? "is-selected" : ""}`}
+          onClick={() => setMode("intrusion")}
+        >
+          <strong>INTRUSION ANALYSIS</strong>
+          <span>Accept an unfolding SOC investigation, uncover evidence, scope the case, and contain proportionately.</span>
+          {mode === "intrusion" && <em className="training-selected-mark">SELECTED</em>}
+        </button>
+      </div>
+    </section>
+
+    {mode === "knowledge" && <>
+      <section><div className="flex flex-wrap items-end justify-between gap-2"><h3 className="training-section-title">1 / SECURITY CATEGORY</h3><p className="theme-muted text-xs">Choose one or more of the {domainCount} categories, or use Mixed for all categories.</p></div><div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">{domains.map((item) => { const selected = selectedDomains.includes(item.id); return <button key={item.id} aria-pressed={selected} onClick={() => chooseDomain(item.id)} className={`training-choice ${selected ? "is-selected" : ""}`}><strong>{item.name}</strong><span>{item.description}</span>{selected && <em className="training-selected-mark">SELECTED</em>}</button>; })}</div></section>
+      <section><h3 className="training-section-title">2 / DIFFICULTY</h3><div className="mt-3 grid gap-3 md:grid-cols-3">{levels.map((item) => <button key={item.id} onClick={() => setDifficulty(item.id)} className={`training-choice difficulty-${item.id} ${difficulty === item.id ? "is-selected" : ""}`}><strong>{item.label}</strong><span>{item.description}</span></button>)}</div></section>
+      <section><h3 className="training-section-title">3 / SESSION LENGTH</h3><div className="mt-3 flex flex-wrap gap-3">{sessionLengths.map((n) => <button className={`training-length ${length === n ? "is-selected" : ""}`} key={n} onClick={() => setLength(n)}>{n} Questions</button>)}</div><p className="theme-muted mt-3 text-xs">Only genuinely distinct concepts are included. Reworded variants are never used twice in one session.</p></section>
+      <button className="training-primary w-full sm:w-auto" onClick={start}>START TRAINING</button>
+    </>}
+
+    {mode === "intrusion" && <IntrusionAnalysis onBack={() => setMode(null)} />}
   </div>;
 }
 
