@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import DashboardViewHero from "./DashboardViewHero";
+import CoolerPong from "./CoolerPong";
 
 type CoolerTalkResponse = {
   updatedAt?: string;
@@ -276,11 +277,14 @@ export default function CoolerTalk() {
   }, [data?.updatedAt]);
 
   const viewHero = (
+    <>
     <DashboardViewHero eyebrow="COOLER TALK · PUBLIC SIGNALS" title="Search chatter for security people" description="A lighter read on public search attention, cyber-anxiety keywords, and one rotating topic worth explaining at the office cooler." aside={updatedAt && (
       <p className="rounded-full border border-[#8DA99B]/55 bg-white/55 px-4 py-2 text-sm font-bold text-[#466357]">
         Updated {updatedAt}
       </p>
     )} />
+    <CoolerPong />
+    </>
   );
 
   if (status === "loading") {

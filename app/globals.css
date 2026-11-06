@@ -2415,3 +2415,8 @@ body {
 .training-product-status { display:inline-flex;align-items:center;gap:.45rem;color:var(--theme-muted);font-size:.72rem;font-weight:900;text-transform:uppercase; }
 .training-product-status i { width:.55rem;height:.55rem;border-radius:50%;background:#5b906d;box-shadow:0 0 0 4px color-mix(in srgb,#5b906d 18%,transparent); }
 @media(max-width:700px){.training-launch-card,.training-product-header,.training-product-bar{align-items:flex-start;flex-direction:column}.training-launch-button{width:100%;justify-content:center}.training-product-header{min-height:280px;padding:1.4rem}.training-product-status{margin-top:.3rem}}
+/* Keep the arcade controls legible across dashboard color schemes. */
+.theme-dashboard-content .cooler-pong { color: #E6E4DE; }
+.theme-dashboard-content .cooler-pong .pong-play { background: #C8DDD2 !important; color: #13231D; }
+.theme-dashboard-content .cooler-pong .pong-play:hover { background: #F5F4EF !important; }
+.theme-dashboard-content .cooler-pong .pong-restart { background: #13231D !important; color: #E6E4DE; }
