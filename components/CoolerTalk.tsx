@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import DashboardViewHero from "./DashboardViewHero";
 import CoolerPong from "./CoolerPong";
+import { explainCyberTrend, trendFieldLabels } from "../lib/cooler-trend-terms";
 
 type CoolerTalkResponse = {
   updatedAt?: string;
@@ -306,6 +307,7 @@ export default function CoolerTalk() {
   }
 
   const trend = data?.fastestRising;
+  const trendTerm = trend ? explainCyberTrend(trend.query) : null;
   const panic = data?.panic;
   const mystery = data?.mysteryTopic;
   const panicScore = panic?.score ?? null;
@@ -318,35 +320,36 @@ export default function CoolerTalk() {
     <div>
       {viewHero}
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_0.82fr]">
-        <section className="rounded-2xl border border-[#8DA99B]/50 bg-white/50 p-6">
+      <div className="grid gap-4 lg:grid-cols-[1fr_0.82fr]" aria-label="Cooler Talk topics and indices">
+        <section aria-labelledby="cyber-trend-term" className="rounded-2xl border border-[#8DA99B]/50 bg-white/50 p-6">
           <p className="text-sm font-black tracking-[0.24em] text-[#3F6B5A]">
-            MYSTERY TOPIC
+            CYBER TREND · THE TERM EXPLAINED
           </p>
-          <h3 className="mt-3 text-4xl font-black text-[#243B32]">
-            {mystery?.title || "Mystery topic"}
+          <h3 id="cyber-trend-term" className="mt-3 break-words text-4xl font-black text-[#243B32]">
+            {trendTerm?.title || "Waiting for a cyber trend"}
           </h3>
-          <div className="mt-6 space-y-3">
-            {(mystery?.stats || []).map((stat) => (
+          {trendTerm ? <>
+          <dl className="mt-6 space-y-3">
+            {trendTerm.fields.map((field, index) => (
               <div
-                key={stat}
+                key={trendFieldLabels[index]}
                 className="rounded-xl border border-[#8DA99B]/45 bg-[#E6E4DE]/80 p-4 text-sm font-semibold text-[#466357]"
               >
-                {stat}
+                <dt className="mb-1 text-xs font-black uppercase tracking-[0.12em] text-[#3F6B5A]">{trendFieldLabels[index]}</dt>
+                <dd className="leading-relaxed">{field}</dd>
               </div>
             ))}
-          </div>
-          {mystery?.analogy && (
+          </dl>
             <p className="mt-6 rounded-xl bg-[#13231D]/90 p-4 text-sm font-semibold leading-relaxed text-[#F5F4EF]">
-              {mystery.analogy}
+              <span className="mb-1 block text-xs font-black uppercase tracking-[0.12em]">At the cooler</span>
+              {trendTerm.analogy}
             </p>
-          )}
           <p className="mt-4 text-xs font-semibold uppercase tracking-[0.2em] text-[#466357]">
-            Refreshes weekly
+            Follows the current Cyber Trend Index
           </p>
+          </> : <p className="mt-4 text-sm font-semibold leading-relaxed text-[#466357]">The explanation will appear here when a cyber trend is available.</p>}
         </section>
 
-        <div className="grid gap-4">
           <section className="rounded-2xl border border-[#8DA99B]/50 bg-white/50 p-6">
             <p className="text-sm font-black tracking-[0.24em] text-[#3F6B5A]">
               CYBER TREND INDEX
@@ -442,6 +445,18 @@ export default function CoolerTalk() {
               </div>
             )}
           </section>
+
+        <section className="rounded-2xl border border-[#8DA99B]/50 bg-white/50 p-6">
+          <p className="text-sm font-black tracking-[0.24em] text-[#3F6B5A]">MYSTERY TOPIC</p>
+          <h3 className="mt-3 text-4xl font-black text-[#243B32]">{mystery?.title || "Mystery topic"}</h3>
+          <div className="mt-6 space-y-3">
+            {(mystery?.stats || []).map(stat => (
+              <div key={stat} className="rounded-xl border border-[#8DA99B]/45 bg-[#E6E4DE]/80 p-4 text-sm font-semibold text-[#466357]">{stat}</div>
+            ))}
+          </div>
+          {mystery?.analogy && <p className="mt-6 rounded-xl bg-[#13231D]/90 p-4 text-sm font-semibold leading-relaxed text-[#F5F4EF]">{mystery.analogy}</p>}
+          <p className="mt-4 text-xs font-semibold uppercase tracking-[0.2em] text-[#466357]">Refreshes weekly</p>
+        </section>
 
           <section className="rounded-2xl border border-[#8DA99B]/50 bg-white/50 p-6">
             <div className="flex items-start justify-between gap-4">
@@ -590,7 +605,6 @@ export default function CoolerTalk() {
               </details>
             )}
           </section>
-        </div>
       </div>
     </div>
   );
